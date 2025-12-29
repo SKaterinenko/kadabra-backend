@@ -2,23 +2,24 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"kadabra/internal/model"
 	"kadabra/internal/service/productService"
 )
 
 type Product struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewProductPostgres(db *sql.DB) productService.ProductRepository {
+func NewProductPostgres(db *pgxpool.Pool) productService.ProductRepository {
 	return &Product{db: db}
 }
 
-func (c *Product) Create(ctx context.Context, product *model.Product) error {
+func (c *Product) Create(ctx context.Context, product *model.Product) (*model.Product, error) {
 	query, args, err := psql.
 		Insert("products").
 		Columns("id", "name", "products_type_id", "manufacturer_id", "short_description", "description").
@@ -29,22 +30,28 @@ func (c *Product) Create(ctx context.Context, product *model.Product) error {
 			product.ManufacturerId,
 			product.ShortDescription,
 			product.Description).
-		Suffix("RETURNING created_at, updated_at").
+		Suffix("RETURNING id, name, products_type_id, manufacturer_id, short_description, description, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
-		return buildSQLError(err)
+		return nil, buildSQLError(err)
 	}
 
-	err = c.db.QueryRowContext(ctx, query, args...).Scan(&product.CreatedAt, &product.UpdatedAt)
+	rows, err := c.db.Query(ctx, query, args...)
 	if err != nil {
-		return queryError(err)
+		return nil, queryError(err)
 	}
-	return nil
+	defer rows.Close()
+
+	result, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[model.Product])
+	if err != nil {
+		return nil, queryError(err)
+	}
+
+	return result, nil
 }
 
 func (c *Product) GetAll(ctx context.Context) ([]*model.Product, error) {
-	products := []*model.Product{}
 	query, _, err := psql.
 		Select(
 			"id",
@@ -56,41 +63,28 @@ func (c *Product) GetAll(ctx context.Context) ([]*model.Product, error) {
 			"created_at",
 			"updated_at").
 		From("products").
+		Limit(30).
 		OrderBy("created_at ASC").
 		ToSql()
 	if err != nil {
 		return nil, buildSQLError(err)
 	}
-	rows, err := c.db.QueryContext(ctx, query)
+
+	rows, err := c.db.Query(ctx, query)
 	if err != nil {
 		return nil, queryError(err)
 	}
 	defer rows.Close()
 
-	if err := rows.Err(); err != nil {
-		return nil, rowsError(err)
+	products, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[model.Product])
+	if err != nil {
+		return nil, scanError(err)
 	}
 
-	for rows.Next() {
-		var product model.Product
-		if err := rows.Scan(
-			&product.Id,
-			&product.Name,
-			&product.ProductsTypeId,
-			&product.ManufacturerId,
-			&product.ShortDescription,
-			&product.Description,
-			&product.CreatedAt,
-			&product.UpdatedAt); err != nil {
-			return nil, scanError(err)
-		}
-		products = append(products, &product)
-	}
 	return products, nil
 }
 
 func (c *Product) GetById(ctx context.Context, id uuid.UUID) (*model.Product, error) {
-	var product model.Product
 	query, args, err := psql.
 		Select(
 			"id",
@@ -108,36 +102,36 @@ func (c *Product) GetById(ctx context.Context, id uuid.UUID) (*model.Product, er
 	if err != nil {
 		return nil, buildSQLError(err)
 	}
-	err = c.db.QueryRowContext(ctx, query, args...).Scan(
-		&product.Id,
-		&product.Name,
-		&product.ProductsTypeId,
-		&product.ManufacturerId,
-		&product.ShortDescription,
-		&product.Description,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-	)
+
+	rows, err := c.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, NoGetRecord
+		return nil, queryError(err)
 	}
-	return &product, nil
+	defer rows.Close()
+
+	product, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[model.Product])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, NoGetRecord
+		}
+		return nil, queryError(err)
+	}
+
+	return product, nil
 }
 
 func (c *Product) Delete(ctx context.Context, id uuid.UUID) error {
-	query, _, err := psql.Delete("products").Where(sq.Eq{"id": id}).ToSql()
+	query, args, err := psql.Delete("products").Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return buildSQLError(err)
 	}
-	result, err := c.db.ExecContext(ctx, query, id)
+
+	cmdTag, err := c.db.Exec(ctx, query, args...)
 	if err != nil {
 		return queryError(err)
 	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return queryError(err)
-	}
-	if rows == 0 {
+
+	if cmdTag.RowsAffected() == 0 {
 		return NoRecordDelete
 	}
 	return nil
@@ -160,38 +154,40 @@ func (c *Product) Patch(ctx context.Context, id uuid.UUID, update *model.Product
 	}
 
 	query, args, err := q.
-		Suffix("RETURNING id, name, products_type_id, manufacturer_id, short_description, description  created_at, updated_at").
+		Suffix(`
+			RETURNING id,
+			name, 
+			products_type_id, 
+			manufacturer_id, 
+			short_description, 
+			description, 
+			created_at, 
+			updated_at`).
 		ToSql()
 	if err != nil {
 		return nil, buildSQLError(err)
 	}
 
-	var product model.Product
-	err = c.db.QueryRowContext(ctx, query, args...).Scan(
-		&product.Id,
-		&product.Name,
-		&product.ProductsTypeId,
-		&product.ManufacturerId,
-		&product.ShortDescription,
-		&product.Description,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, NoGetRecord
-	}
+	rows, err := c.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, queryError(err)
 	}
+	defer rows.Close()
 
-	return &product, nil
+	product, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[model.Product])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, NoGetRecord
+		}
+		return nil, queryError(err)
+	}
+
+	return product, nil
 }
 
 func (c *Product) GetByCategoryIds(ctx context.Context, categoryIds []uuid.UUID) ([]*model.Product, error) {
-	products := []*model.Product{}
-
 	if len(categoryIds) == 0 {
-		return products, nil
+		return []*model.Product{}, nil
 	}
 
 	query, args, err := psql.
@@ -209,39 +205,23 @@ func (c *Product) GetByCategoryIds(ctx context.Context, categoryIds []uuid.UUID)
 		Join("products_type pt ON p.products_type_id = pt.id").
 		Join("sub_categories sc ON pt.sub_category_id = sc.id").
 		Where(sq.Eq{"sc.category_id": categoryIds}).
-		OrderBy("created_at ASC").
+		Limit(30).
+		OrderBy("p.created_at ASC").
 		ToSql()
 
 	if err != nil {
 		return nil, buildSQLError(err)
 	}
 
-	rows, err := c.db.QueryContext(ctx, query, args...)
+	rows, err := c.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, queryError(err)
 	}
 	defer rows.Close()
 
-	for rows.Next() {
-		var product model.Product
-		err := rows.Scan(
-			&product.Id,
-			&product.Name,
-			&product.ProductsTypeId,
-			&product.ManufacturerId,
-			&product.ShortDescription,
-			&product.Description,
-			&product.CreatedAt,
-			&product.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		products = append(products, &product)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
+	products, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[model.Product])
+	if err != nil {
+		return nil, scanError(err)
 	}
 
 	return products, nil

@@ -17,28 +17,28 @@ func NewService(repo ManufacturerRepository) *Service {
 func (s *Service) Create(ctx context.Context, category *CreateInput) (*model.Manufacturer, error) {
 	newManufacturer := model.NewManufacturer(category.Name)
 
-	err := s.repo.Create(ctx, newManufacturer)
+	out, err := s.repo.Create(ctx, newManufacturer)
 	if err != nil {
 		return nil, err
 	}
 
-	return newManufacturer, nil
+	return out, nil
 }
 
 func (s *Service) GetAll(ctx context.Context) ([]*model.Manufacturer, error) {
-	manufacturers, err := s.repo.GetAll(ctx)
+	out, err := s.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return manufacturers, nil
+	return out, nil
 }
 
 func (s *Service) GetById(ctx context.Context, id uuid.UUID) (*model.Manufacturer, error) {
-	byId, err := s.repo.GetById(ctx, id)
+	out, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return byId, nil
+	return out, nil
 }
 
 func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
@@ -51,9 +51,9 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 
 func (s *Service) Patch(ctx context.Context, id uuid.UUID, update *PatchInput) (*model.Manufacturer, error) {
 	newPatch := model.NewManufacturerPatch(*update.Name)
-	patch, err := s.repo.Patch(ctx, id, newPatch)
+	out, err := s.repo.Patch(ctx, id, newPatch)
 	if err != nil {
 		return nil, err
 	}
-	return patch, nil
+	return out, nil
 }

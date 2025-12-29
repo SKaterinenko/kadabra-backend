@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"kadabra/internal/config"
@@ -29,7 +30,8 @@ func main() {
 	}
 
 	// Database
-	postgresDB, err := repository.NewPostgres(cfg)
+	ctx := context.Background()
+	postgresDB, err := repository.NewPostgres(ctx, cfg)
 	if err != nil {
 		log.Fatal("db error: ", err)
 	}

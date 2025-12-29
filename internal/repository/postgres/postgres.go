@@ -1,32 +1,48 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"kadabra/internal/config"
+	"time"
 )
 
-func NewPostgres(cfg *config.Config) (*sql.DB, error) {
+func NewPostgres(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBName,
+		cfg.DBSSLMode,
 	)
 
-	db, err := sql.Open("postgres", dsn)
+	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := db.Ping(); err != nil {
+	poolConfig.MaxConns = 25
+	poolConfig.MinConns = 5
+
+	poolConfig.MaxConnIdleTime = 5 * time.Minute
+	poolConfig.MaxConnLifetime = 30 * time.Minute
+	poolConfig.HealthCheckPeriod = 1 * time.Minute
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
+	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, err
+	}
 
-	return db, nil
+	return pool, nil
 }
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)

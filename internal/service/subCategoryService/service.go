@@ -17,28 +17,28 @@ func NewService(repo SubCategoryRepository) *Service {
 func (s *Service) Create(ctx context.Context, category *CreateInput) (*model.SubCategory, error) {
 	newCategory := model.NewSubCategory(category.Name, category.CategoryId)
 
-	err := s.repo.Create(ctx, newCategory)
+	out, err := s.repo.Create(ctx, newCategory)
 	if err != nil {
 		return nil, err
 	}
 
-	return newCategory, nil
+	return out, nil
 }
 
 func (s *Service) GetAll(ctx context.Context) ([]*model.SubCategory, error) {
-	categories, err := s.repo.GetAll(ctx)
+	out, err := s.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return categories, nil
+	return out, nil
 }
 
 func (s *Service) GetById(ctx context.Context, id uuid.UUID) (*model.SubCategory, error) {
-	byId, err := s.repo.GetById(ctx, id)
+	out, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return byId, nil
+	return out, nil
 }
 
 func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
@@ -51,9 +51,9 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 
 func (s *Service) Patch(ctx context.Context, id uuid.UUID, update *PatchInput) (*model.SubCategory, error) {
 	newPatch := model.NewSubCategoryPatch(*update.Name)
-	patch, err := s.repo.Patch(ctx, id, newPatch)
+	out, err := s.repo.Patch(ctx, id, newPatch)
 	if err != nil {
 		return nil, err
 	}
-	return patch, nil
+	return out, nil
 }
