@@ -1,10 +1,8 @@
 package products_type_http
 
-import "github.com/google/uuid"
-
 type createDTO struct {
-	Name          string    `json:"name" validate:"required"`
-	SubCategoryId uuid.UUID `json:"subCategoryId" validate:"required"`
+	Name          string `json:"name" validate:"required"`
+	SubCategoryId int    `json:"subCategoryId" validate:"required"`
 }
 
 type patchDTO struct {

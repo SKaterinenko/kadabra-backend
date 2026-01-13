@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/google/uuid"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"kadabra/internal/core"
@@ -25,8 +25,8 @@ func NewProductsTypePostgres(db *pgxpool.Pool) products_type_service.ProductsTyp
 func (c *ProductsType) Create(ctx context.Context, productsType *products_type_model.ProductsType) (*products_type_model.ProductsType, error) {
 	query, args, err := config.Psql.
 		Insert("products_type").
-		Columns("id", "sub_category_id", "name").
-		Values(productsType.Id, productsType.SubCategoryId, productsType.Name).
+		Columns("sub_category_id", "name").
+		Values(productsType.SubCategoryId, productsType.Name).
 		Suffix("RETURNING id, name, sub_category_id, created_at, updated_at").
 		ToSql()
 
@@ -73,7 +73,7 @@ func (c *ProductsType) GetAll(ctx context.Context) ([]*products_type_model.Produ
 	return productsTypes, nil
 }
 
-func (c *ProductsType) GetProductsTypeByCategoryId(ctx context.Context, id uuid.UUID) ([]*sub_categories_model.SubCategoryWithProductsType, error) {
+func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, id string) ([]*sub_categories_model.SubCategoryWithProductsType, error) {
 	query, args, err := config.Psql.
 		Select(
 			"sc.id",
@@ -102,7 +102,7 @@ func (c *ProductsType) GetProductsTypeByCategoryId(ctx context.Context, id uuid.
 	}
 	defer rows.Close()
 
-	mapSc := map[uuid.UUID]*sub_categories_model.SubCategoryWithProductsType{}
+	mapSc := map[int]*sub_categories_model.SubCategoryWithProductsType{}
 
 	for rows.Next() {
 		var scWithProductType sub_categories_model.SubCategoryWithProductsType
@@ -144,7 +144,7 @@ func (c *ProductsType) GetProductsTypeByCategoryId(ctx context.Context, id uuid.
 	return subCategoryWithProductsTypes, nil
 }
 
-func (c *ProductsType) GetById(ctx context.Context, id uuid.UUID) (*products_type_model.ProductsType, error) {
+func (c *ProductsType) GetById(ctx context.Context, id int) (*products_type_model.ProductsType, error) {
 	query, args, err := config.Psql.
 		Select("id", "name", "sub_category_id", "created_at", "updated_at").
 		From("products_type").
@@ -171,7 +171,7 @@ func (c *ProductsType) GetById(ctx context.Context, id uuid.UUID) (*products_typ
 	return productsType, nil
 }
 
-func (c *ProductsType) Delete(ctx context.Context, id uuid.UUID) error {
+func (c *ProductsType) Delete(ctx context.Context, id int) error {
 	query, args, err := config.Psql.Delete("products_type").Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return core.BuildSQLError(err)
@@ -188,7 +188,7 @@ func (c *ProductsType) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (c *ProductsType) Patch(ctx context.Context, id uuid.UUID, update *products_type_model.ProductsTypePatch) (*products_type_model.ProductsType, error) {
+func (c *ProductsType) Patch(ctx context.Context, id int, update *products_type_model.ProductsTypePatch) (*products_type_model.ProductsType, error) {
 	q := config.Psql.
 		Update("products_type").
 		Where(sq.Eq{"id": id})

@@ -1,24 +1,24 @@
 package sub_categories_model
 
 import (
-	"github.com/google/uuid"
 	products_type_model "kadabra/internal/features/products_type/model"
 	"time"
 )
 
 type SubCategory struct {
-	Id         uuid.UUID `json:"id" db:"id"`
-	CategoryId uuid.UUID `json:"category_id" db:"category_id"`
+	Id         int       `json:"id" db:"id"`
+	CategoryId int       `json:"category_id" db:"category_id"`
 	Name       string    `json:"name" db:"name"`
+	Slug       string    `json:"slug" db:"slug"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
 }
 
-func NewSubCategory(name string, categoryId uuid.UUID) *SubCategory {
+func NewSubCategory(name, slug string, categoryId int) *SubCategory {
 	return &SubCategory{
-		Id:         uuid.New(),
 		CategoryId: categoryId,
 		Name:       name,
+		Slug:       slug,
 	}
 }
 

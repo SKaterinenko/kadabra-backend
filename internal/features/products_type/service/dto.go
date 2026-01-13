@@ -1,12 +1,10 @@
 package products_type_service
 
-import (
-	"github.com/google/uuid"
-)
+import ()
 
 type CreateInput struct {
 	Name          string
-	SubCategoryId uuid.UUID
+	SubCategoryId int
 }
 
 type PatchInput struct {

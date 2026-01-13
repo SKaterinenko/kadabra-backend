@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/google/uuid"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"kadabra/internal/core"
@@ -24,9 +24,9 @@ func NewSubCategoryPostgres(db *pgxpool.Pool) sub_categories_service.SubCategory
 func (c *SubCategory) Create(ctx context.Context, subCategory *sub_categories_model.SubCategory) (*sub_categories_model.SubCategory, error) {
 	query, args, err := config.Psql.
 		Insert("sub_categories").
-		Columns("id", "category_id", "name").
-		Values(subCategory.Id, subCategory.CategoryId, subCategory.Name).
-		Suffix("RETURNING id, name, category_id, created_at, updated_at").
+		Columns("category_id", "name", "slug").
+		Values(subCategory.CategoryId, subCategory.Name, subCategory.Slug).
+		Suffix("RETURNING id, name, slug, category_id, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *SubCategory) Create(ctx context.Context, subCategory *sub_categories_mo
 
 func (c *SubCategory) GetAll(ctx context.Context) ([]*sub_categories_model.SubCategory, error) {
 	query, _, err := config.Psql.
-		Select("id", "name", "category_id", "created_at", "updated_at").
+		Select("id", "name", "slug", "category_id", "created_at", "updated_at").
 		From("sub_categories").
 		Limit(30).
 		OrderBy("created_at ASC").
@@ -72,9 +72,9 @@ func (c *SubCategory) GetAll(ctx context.Context) ([]*sub_categories_model.SubCa
 	return subCategories, nil
 }
 
-func (c *SubCategory) GetById(ctx context.Context, id uuid.UUID) (*sub_categories_model.SubCategory, error) {
+func (c *SubCategory) GetById(ctx context.Context, id int) (*sub_categories_model.SubCategory, error) {
 	query, args, err := config.Psql.
-		Select("id", "name", "category_id", "created_at", "updated_at").
+		Select("id", "name", "slug", "category_id", "created_at", "updated_at").
 		From("sub_categories").
 		Where(sq.Eq{"id": id}).
 		ToSql()
@@ -99,7 +99,7 @@ func (c *SubCategory) GetById(ctx context.Context, id uuid.UUID) (*sub_categorie
 	return subCategory, nil
 }
 
-func (c *SubCategory) Delete(ctx context.Context, id uuid.UUID) error {
+func (c *SubCategory) Delete(ctx context.Context, id int) error {
 	query, args, err := config.Psql.Delete("sub_categories").Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return core.BuildSQLError(err)
@@ -116,7 +116,7 @@ func (c *SubCategory) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (c *SubCategory) Patch(ctx context.Context, id uuid.UUID, update *sub_categories_model.SubCategoryPatch) (*sub_categories_model.SubCategory, error) {
+func (c *SubCategory) Patch(ctx context.Context, id int, update *sub_categories_model.SubCategoryPatch) (*sub_categories_model.SubCategory, error) {
 	q := config.Psql.
 		Update("sub_categories").
 		Where(sq.Eq{"id": id})
@@ -133,7 +133,7 @@ func (c *SubCategory) Patch(ctx context.Context, id uuid.UUID, update *sub_categ
 	}
 
 	query, args, err := q.
-		Suffix("RETURNING id, name, category_id, created_at, updated_at").
+		Suffix("RETURNING id, name, slug, category_id, created_at, updated_at").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)

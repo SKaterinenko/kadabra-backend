@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/google/uuid"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"kadabra/internal/core"
@@ -24,9 +24,9 @@ func NewManufacturerPostgres(db *pgxpool.Pool) manufacturers_service.Manufacture
 func (m *Manufacturer) Create(ctx context.Context, manufacturer *manufacturers_model.Manufacturer) (*manufacturers_model.Manufacturer, error) {
 	query, args, err := config.Psql.
 		Insert("manufacturers").
-		Columns("id", "name").
-		Values(manufacturer.Id, manufacturer.Name).
-		Suffix("RETURNING id, name, created_at, updated_at").
+		Columns("name", "slug").
+		Values(manufacturer.Name, manufacturer.Slug).
+		Suffix("RETURNING id, name, slug, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
@@ -49,7 +49,7 @@ func (m *Manufacturer) Create(ctx context.Context, manufacturer *manufacturers_m
 
 func (m *Manufacturer) GetAll(ctx context.Context) ([]*manufacturers_model.Manufacturer, error) {
 	query, _, err := config.Psql.
-		Select("id", "name", "created_at", "updated_at").
+		Select("id", "name", "slug", "created_at", "updated_at").
 		From("manufacturers").
 		Limit(30).
 		OrderBy("created_at ASC").
@@ -72,9 +72,9 @@ func (m *Manufacturer) GetAll(ctx context.Context) ([]*manufacturers_model.Manuf
 	return manufacturers, nil
 }
 
-func (m *Manufacturer) GetById(ctx context.Context, id uuid.UUID) (*manufacturers_model.Manufacturer, error) {
+func (m *Manufacturer) GetById(ctx context.Context, id int) (*manufacturers_model.Manufacturer, error) {
 	query, args, err := config.Psql.
-		Select("id", "name", "created_at", "updated_at").
+		Select("id", "name", "slug", "created_at", "updated_at").
 		From("manufacturers").
 		Where(sq.Eq{"id": id}).
 		ToSql()
@@ -99,7 +99,7 @@ func (m *Manufacturer) GetById(ctx context.Context, id uuid.UUID) (*manufacturer
 	return manufacturer, nil
 }
 
-func (m *Manufacturer) Delete(ctx context.Context, id uuid.UUID) error {
+func (m *Manufacturer) Delete(ctx context.Context, id int) error {
 	query, args, err := config.Psql.Delete("manufacturers").Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return core.BuildSQLError(err)
@@ -116,7 +116,7 @@ func (m *Manufacturer) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (m *Manufacturer) Patch(ctx context.Context, id uuid.UUID, update *manufacturers_model.ManufacturerPatch) (*manufacturers_model.Manufacturer, error) {
+func (m *Manufacturer) Patch(ctx context.Context, id int, update *manufacturers_model.ManufacturerPatch) (*manufacturers_model.Manufacturer, error) {
 	q := config.Psql.
 		Update("manufacturers").
 		Where(sq.Eq{"id": id})
@@ -133,7 +133,7 @@ func (m *Manufacturer) Patch(ctx context.Context, id uuid.UUID, update *manufact
 	}
 
 	query, args, err := q.
-		Suffix("RETURNING id, name, created_at, updated_at").
+		Suffix("RETURNING id, name, slug, created_at, updated_at").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)

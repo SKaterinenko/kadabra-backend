@@ -1,21 +1,19 @@
 package products_service
 
-import (
-	"github.com/google/uuid"
-)
+import ()
 
 type CreateInput struct {
 	Name             string
 	Description      string
 	ShortDescription string
-	ProductsTypeId   uuid.UUID
-	ManufacturerId   uuid.UUID
+	ProductsTypeId   int
+	ManufacturerId   int
 }
 
 type PatchInput struct {
 	Name             *string
 	Description      *string
 	ShortDescription *string
-	ProductsTypeId   *uuid.UUID
-	ManufacturerId   *uuid.UUID
+	ProductsTypeId   *int
+	ManufacturerId   *int
 }

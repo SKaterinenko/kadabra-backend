@@ -1,20 +1,20 @@
 package products_type_http
 
 import (
-	"github.com/google/uuid"
 	products_type_service "kadabra/internal/features/products_type/service"
 	"kadabra/pkg/check"
 	"kadabra/pkg/req"
 	"kadabra/pkg/res"
 	"net/http"
+	"strconv"
 )
 
 type HandlerDeps struct {
-	Service *products_type_service.Service
+	Service ProductsTypeInterface
 }
 
 type Handler struct {
-	service *products_type_service.Service
+	service ProductsTypeInterface
 }
 
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
@@ -25,7 +25,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("GET /products-type/{id}", handler.GetById)
 	router.HandleFunc("DELETE /products-type/{id}", handler.Delete)
 	router.HandleFunc("PATCH /products-type/{id}", handler.Patch)
-	router.HandleFunc("GET /products-type-by-category-id/{id}", handler.GetProductsTypeByCategoryId)
+	router.HandleFunc("GET /products-type-by-category-slug/{slug}", handler.GetProductsTypeByCategorySlug)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +54,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if check.CheckErr(&w, err) {
 		return
 	}
@@ -67,7 +67,7 @@ func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if check.CheckErr(&w, err) {
 		return
 	}
@@ -84,7 +84,7 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	idStr := r.PathValue("id")
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if check.CheckErr(&w, err) {
 		return
 	}
@@ -98,13 +98,9 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 	res.Json(w, productsType, http.StatusOK)
 }
 
-func (h *Handler) GetProductsTypeByCategoryId(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	id, err := uuid.Parse(idStr)
-	if check.CheckErr(&w, err) {
-		return
-	}
-	productsType, err := h.service.GetProductsTypeByCategoryId(r.Context(), id)
+func (h *Handler) GetProductsTypeByCategorySlug(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	productsType, err := h.service.GetProductsTypeByCategorySlug(r.Context(), slug)
 	if check.CheckErr(&w, err) {
 		return
 	}

@@ -1,12 +1,10 @@
 package sub_categories_service
 
-import (
-	"github.com/google/uuid"
-)
+import ()
 
 type CreateInput struct {
 	Name       string
-	CategoryId uuid.UUID
+	CategoryId int
 }
 
 type PatchInput struct {

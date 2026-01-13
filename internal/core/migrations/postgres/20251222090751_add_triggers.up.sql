@@ -22,7 +22,8 @@ CREATE TRIGGER products_type_set_updated_at
     EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER products_set_updated_at
-    BEFORE UPDATE ON products    FOR EACH ROW
+    BEFORE UPDATE ON products
+    FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER manufacturers_set_updated_at

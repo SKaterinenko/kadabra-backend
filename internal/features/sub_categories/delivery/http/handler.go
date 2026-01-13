@@ -1,12 +1,12 @@
 package sub_categories_http
 
 import (
-	"github.com/google/uuid"
 	sub_categories_service "kadabra/internal/features/sub_categories/service"
 	"kadabra/pkg/check"
 	"kadabra/pkg/req"
 	"kadabra/pkg/res"
 	"net/http"
+	"strconv"
 )
 
 type HandlerDeps struct {
@@ -53,7 +53,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if check.CheckErr(&w, err) {
 		return
 	}
@@ -66,7 +66,7 @@ func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if check.CheckErr(&w, err) {
 		return
 	}
@@ -83,7 +83,7 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	idStr := r.PathValue("id")
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if check.CheckErr(&w, err) {
 		return
 	}

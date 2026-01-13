@@ -2,25 +2,25 @@ include .env
 export
 
 DB_URL=postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSLMODE)
-PG_DERICTORY=./internal/core/migrations/postgres
+PG_DIRECTORY=./internal/core/migrations/postgres
 
 run:
 	go run ./cmd/app/main.go
 
 migrate-pg-up:
-	migrate -path "${PG_DERICTORY}" -database "$(DB_URL)" up
+	migrate -path "${PG_DIRECTORY}" -database "$(DB_URL)" up
 
 migrate-pg-down:
-	migrate -path "${PG_DERICTORY}" -database "$(DB_URL)" down 1
+	migrate -path "${PG_DIRECTORY}" -database "$(DB_URL)" down 1
 
 migrate-pg-create:
-	migrate create -ext sql -dir "${PG_DERICTORY}" $(name)
+	migrate create -ext sql -dir "${PG_DIRECTORY}" $(name)
 
 migrate-pg-force:
 ifndef version
 	$(error Please specify version: make migrate-pg-force version=123)
 endif
-	migrate -path "${PG_DERICTORY}" -database "$(DB_URL)" force $(version)
+	migrate -path "${PG_DIRECTORY}" -database "$(DB_URL)" force $(version)
 
 #TODO сделать время в названии бэкапа
 pg-backup:

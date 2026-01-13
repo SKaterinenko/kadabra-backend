@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/google/uuid"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"kadabra/internal/core"
@@ -23,9 +23,8 @@ func NewProductPostgres(db *pgxpool.Pool) *Product {
 func (c *Product) Create(ctx context.Context, product *products_model.Product) (*products_model.Product, error) {
 	query, args, err := config.Psql.
 		Insert("products").
-		Columns("id", "name", "products_type_id", "manufacturer_id", "short_description", "description").
+		Columns("name", "products_type_id", "manufacturer_id", "short_description", "description").
 		Values(
-			product.Id,
 			product.Name,
 			product.ProductsTypeId,
 			product.ManufacturerId,
@@ -85,7 +84,7 @@ func (c *Product) GetAll(ctx context.Context) ([]*products_model.Product, error)
 	return products, nil
 }
 
-func (c *Product) GetById(ctx context.Context, id uuid.UUID) (*products_model.Product, error) {
+func (c *Product) GetById(ctx context.Context, id int) (*products_model.Product, error) {
 	query, args, err := config.Psql.
 		Select(
 			"id",
@@ -121,7 +120,7 @@ func (c *Product) GetById(ctx context.Context, id uuid.UUID) (*products_model.Pr
 	return product, nil
 }
 
-func (c *Product) Delete(ctx context.Context, id uuid.UUID) error {
+func (c *Product) Delete(ctx context.Context, id int) error {
 	query, args, err := config.Psql.Delete("products").Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return core.BuildSQLError(err)
@@ -138,7 +137,7 @@ func (c *Product) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (c *Product) Patch(ctx context.Context, id uuid.UUID, update *products_model.ProductPatch) (*products_model.Product, error) {
+func (c *Product) Patch(ctx context.Context, id int, update *products_model.ProductPatch) (*products_model.Product, error) {
 	q := config.Psql.
 		Update("products").
 		Where(sq.Eq{"id": id})
@@ -186,7 +185,7 @@ func (c *Product) Patch(ctx context.Context, id uuid.UUID, update *products_mode
 	return product, nil
 }
 
-func (c *Product) GetByCategoryIds(ctx context.Context, categoryIds []uuid.UUID) ([]*products_model.Product, error) {
+func (c *Product) GetByCategoryIds(ctx context.Context, categoryIds []int) ([]*products_model.Product, error) {
 	if len(categoryIds) == 0 {
 		return []*products_model.Product{}, nil
 	}

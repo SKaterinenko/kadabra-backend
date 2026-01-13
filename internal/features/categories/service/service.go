@@ -2,9 +2,8 @@ package categories_service
 
 import (
 	"context"
-	"github.com/google/uuid"
-	"github.com/gosimple/slug"
-	category_model "kadabra/internal/features/categories/model"
+	"fmt"
+	categories_model "kadabra/internal/features/categories/model"
 )
 
 type Service struct {
@@ -15,46 +14,51 @@ func NewService(repo CategoryRepository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Create(ctx context.Context, category *CreateInput) (*category_model.Category, error) {
-	slugText := slug.Make(category.Name)
-	newCategory := category_model.NewCategory(category.Name, slugText)
-	out, err := s.repo.Create(ctx, newCategory)
-	if err != nil {
-		return nil, err
+func (s *Service) Create(ctx context.Context, req *CreateInput) (*categories_model.CategoryWithTranslations, error) {
+	// Минимум один перевод
+	if len(req.Translations) == 0 {
+		return nil, fmt.Errorf("at least one translation required")
+	}
+	if _, hasEn := req.Translations["ru"]; !hasEn {
+		return nil, fmt.Errorf("russian translation is required")
 	}
 
-	return out, nil
+	return s.repo.Create(ctx, req)
 }
 
-func (s *Service) GetAll(ctx context.Context) ([]*category_model.Category, error) {
-	out, err := s.repo.GetAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func (s *Service) GetAll(ctx context.Context, language string) ([]*categories_model.CategoryResponse, error) {
+	return s.repo.GetAll(ctx, language)
 }
 
-func (s *Service) GetById(ctx context.Context, id uuid.UUID) (*category_model.Category, error) {
-	out, err := s.repo.GetById(ctx, id)
-	if err != nil {
-		return nil, err
+func (s *Service) GetById(ctx context.Context, id int, language string) (*categories_model.CategoryResponse, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid category id")
 	}
-	return out, nil
+
+	return s.repo.GetById(ctx, id, language)
 }
 
-func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
-	err := s.repo.Delete(ctx, id)
-	if err != nil {
-		return err
+func (s *Service) GetBySlug(ctx context.Context, slug, language string) (*categories_model.CategoryResponse, error) {
+	if slug == "" {
+		return nil, fmt.Errorf("slug cannot be empty")
 	}
-	return nil
+
+	return s.repo.GetBySlug(ctx, slug, language)
 }
 
-func (s *Service) Patch(ctx context.Context, id uuid.UUID, update *PatchInput) (*category_model.Category, error) {
-	newPatch := category_model.NewCategoryPatch(*update.Name)
-	out, err := s.repo.Patch(ctx, id, newPatch)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
+//func (s *Service) Delete(ctx context.Context, id int) error {
+//	err := s.repo.Delete(ctx, id)
+//	if err != nil {
+//		return err
+//	}
+//	return nil
+//}
+
+//func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*category_model.Category, error) {
+//	newPatch := category_model.NewCategoryPatch(*update.Name)
+//	out, err := s.repo.Patch(ctx, id, newPatch)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return out, nil
+//}
