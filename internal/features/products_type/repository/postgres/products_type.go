@@ -77,7 +77,6 @@ func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, id str
 	query, args, err := config.Psql.
 		Select(
 			"sc.id",
-			"sc.name",
 			"sc.category_id",
 			"sc.created_at",
 			"sc.updated_at",
@@ -110,7 +109,6 @@ func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, id str
 
 		if err := rows.Scan(
 			&scWithProductType.Id,
-			&scWithProductType.Name,
 			&scWithProductType.CategoryId,
 			&scWithProductType.CreatedAt,
 			&scWithProductType.UpdatedAt,

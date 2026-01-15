@@ -7,9 +7,9 @@ import (
 )
 
 type SubCategoryRepository interface {
-	Create(ctx context.Context, subCategory *sub_categories_model.SubCategory) (*sub_categories_model.SubCategory, error)
-	GetAll(ctx context.Context) ([]*sub_categories_model.SubCategory, error)
-	GetById(ctx context.Context, id int) (*sub_categories_model.SubCategory, error)
+	Create(ctx context.Context, req *CreateInput) (*sub_categories_model.SubCategoryWithTranslations, error)
+	GetAll(ctx context.Context, lang string) ([]*sub_categories_model.SubCategory, error)
+	GetById(ctx context.Context, id int, lang string) (*sub_categories_model.SubCategory, error)
 	Delete(ctx context.Context, id int) error
-	Patch(ctx context.Context, id int, subCategory *sub_categories_model.SubCategoryPatch) (*sub_categories_model.SubCategory, error)
+	Patch(ctx context.Context, id int, subCategory *sub_categories_model.SubCategoryPatch) (*sub_categories_model.SubCategoryWithTranslations, error)
 }

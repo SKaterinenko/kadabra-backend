@@ -2,8 +2,6 @@ package sub_categories_service
 
 import (
 	"context"
-
-	"github.com/gosimple/slug"
 	"kadabra/internal/features/sub_categories/model"
 )
 
@@ -15,11 +13,8 @@ func NewService(repo SubCategoryRepository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Create(ctx context.Context, subCategory *CreateInput) (*sub_categories_model.SubCategory, error) {
-	slugText := slug.Make(subCategory.Name)
-	newSubCategory := sub_categories_model.NewSubCategory(subCategory.Name, slugText, subCategory.CategoryId)
-
-	out, err := s.repo.Create(ctx, newSubCategory)
+func (s *Service) Create(ctx context.Context, subCategory *CreateInput) (*sub_categories_model.SubCategoryWithTranslations, error) {
+	out, err := s.repo.Create(ctx, subCategory)
 	if err != nil {
 		return nil, err
 	}
@@ -27,16 +22,16 @@ func (s *Service) Create(ctx context.Context, subCategory *CreateInput) (*sub_ca
 	return out, nil
 }
 
-func (s *Service) GetAll(ctx context.Context) ([]*sub_categories_model.SubCategory, error) {
-	out, err := s.repo.GetAll(ctx)
+func (s *Service) GetAll(ctx context.Context, lang string) ([]*sub_categories_model.SubCategory, error) {
+	out, err := s.repo.GetAll(ctx, lang)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (s *Service) GetById(ctx context.Context, id int) (*sub_categories_model.SubCategory, error) {
-	out, err := s.repo.GetById(ctx, id)
+func (s *Service) GetById(ctx context.Context, id int, lang string) (*sub_categories_model.SubCategory, error) {
+	out, err := s.repo.GetById(ctx, id, lang)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +46,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*sub_categories_model.SubCategory, error) {
+func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*sub_categories_model.SubCategoryWithTranslations, error) {
 	newPatch := sub_categories_model.NewSubCategoryPatch(*update.Name)
 	out, err := s.repo.Patch(ctx, id, newPatch)
 	if err != nil {
