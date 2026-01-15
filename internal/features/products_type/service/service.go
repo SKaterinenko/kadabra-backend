@@ -2,7 +2,7 @@ package products_type_service
 
 import (
 	"context"
-	"kadabra/internal/features/products_type/model"
+	products_type_model "kadabra/internal/features/products_type/model"
 	sub_categories_model "kadabra/internal/features/sub_categories/model"
 )
 
@@ -14,10 +14,8 @@ func NewService(repo ProductsTypeRepository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Create(ctx context.Context, productsType *CreateInput) (*products_type_model.ProductsType, error) {
-	newProductsType := products_type_model.NewProductsType(productsType.Name, productsType.SubCategoryId)
-
-	out, err := s.repo.Create(ctx, newProductsType)
+func (s *Service) Create(ctx context.Context, productsType *CreateInput) (*products_type_model.ProductsTypeWithTranslations, error) {
+	out, err := s.repo.Create(ctx, productsType)
 	if err != nil {
 		return nil, err
 	}
@@ -25,16 +23,16 @@ func (s *Service) Create(ctx context.Context, productsType *CreateInput) (*produ
 	return out, nil
 }
 
-func (s *Service) GetAll(ctx context.Context) ([]*products_type_model.ProductsType, error) {
-	out, err := s.repo.GetAll(ctx)
+func (s *Service) GetAll(ctx context.Context, lang string) ([]*products_type_model.ProductsType, error) {
+	out, err := s.repo.GetAll(ctx, lang)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (s *Service) GetById(ctx context.Context, id int) (*products_type_model.ProductsType, error) {
-	out, err := s.repo.GetById(ctx, id)
+func (s *Service) GetById(ctx context.Context, id int, lang string) (*products_type_model.ProductsType, error) {
+	out, err := s.repo.GetById(ctx, id, lang)
 	if err != nil {
 		return nil, err
 	}

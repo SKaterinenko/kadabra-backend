@@ -19,18 +19,15 @@ func (s *Service) Create(ctx context.Context, req *CreateInput) (*categories_mod
 	if len(req.Translations) == 0 {
 		return nil, fmt.Errorf("at least one translation required")
 	}
-	if _, hasEn := req.Translations["ru"]; !hasEn {
-		return nil, fmt.Errorf("russian translation is required")
-	}
 
 	return s.repo.Create(ctx, req)
 }
 
-func (s *Service) GetAll(ctx context.Context, language string) ([]*categories_model.CategoryResponse, error) {
+func (s *Service) GetAll(ctx context.Context, language string) ([]*categories_model.Category, error) {
 	return s.repo.GetAll(ctx, language)
 }
 
-func (s *Service) GetById(ctx context.Context, id int, language string) (*categories_model.CategoryResponse, error) {
+func (s *Service) GetById(ctx context.Context, id int, language string) (*categories_model.Category, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid category id")
 	}
@@ -38,7 +35,7 @@ func (s *Service) GetById(ctx context.Context, id int, language string) (*catego
 	return s.repo.GetById(ctx, id, language)
 }
 
-func (s *Service) GetBySlug(ctx context.Context, slug, language string) (*categories_model.CategoryResponse, error) {
+func (s *Service) GetBySlug(ctx context.Context, slug, language string) (*categories_model.Category, error) {
 	if slug == "" {
 		return nil, fmt.Errorf("slug cannot be empty")
 	}
@@ -46,13 +43,13 @@ func (s *Service) GetBySlug(ctx context.Context, slug, language string) (*catego
 	return s.repo.GetBySlug(ctx, slug, language)
 }
 
-//func (s *Service) Delete(ctx context.Context, id int) error {
-//	err := s.repo.Delete(ctx, id)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
+func (s *Service) Delete(ctx context.Context, id int) error {
+	err := s.repo.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 //func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*category_model.Category, error) {
 //	newPatch := category_model.NewCategoryPatch(*update.Name)

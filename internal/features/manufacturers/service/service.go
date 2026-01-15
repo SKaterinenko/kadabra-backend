@@ -2,9 +2,7 @@ package manufacturers_service
 
 import (
 	"context"
-
-	"github.com/gosimple/slug"
-	"kadabra/internal/features/manufacturers/model"
+	manufacturers_model "kadabra/internal/features/manufacturers/model"
 )
 
 type Service struct {
@@ -15,11 +13,8 @@ func NewService(repo ManufacturerRepository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Create(ctx context.Context, manufacturer *CreateInput) (*manufacturers_model.Manufacturer, error) {
-	slugText := slug.Make(manufacturer.Name)
-	newManufacturer := manufacturers_model.NewManufacturer(manufacturer.Name, slugText)
-
-	out, err := s.repo.Create(ctx, newManufacturer)
+func (s *Service) Create(ctx context.Context, manufacturer *CreateInput) (*manufacturers_model.ManufacturerWithTranslations, error) {
+	out, err := s.repo.Create(ctx, manufacturer)
 	if err != nil {
 		return nil, err
 	}
@@ -27,16 +22,16 @@ func (s *Service) Create(ctx context.Context, manufacturer *CreateInput) (*manuf
 	return out, nil
 }
 
-func (s *Service) GetAll(ctx context.Context) ([]*manufacturers_model.Manufacturer, error) {
-	out, err := s.repo.GetAll(ctx)
+func (s *Service) GetAll(ctx context.Context, lang string) ([]*manufacturers_model.Manufacturer, error) {
+	out, err := s.repo.GetAll(ctx, lang)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (s *Service) GetById(ctx context.Context, id int) (*manufacturers_model.Manufacturer, error) {
-	out, err := s.repo.GetById(ctx, id)
+func (s *Service) GetById(ctx context.Context, id int, lang string) (*manufacturers_model.Manufacturer, error) {
+	out, err := s.repo.GetById(ctx, id, lang)
 	if err != nil {
 		return nil, err
 	}

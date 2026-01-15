@@ -3,6 +3,7 @@ package products_type_http
 import (
 	products_type_service "kadabra/internal/features/products_type/service"
 	"kadabra/pkg/check"
+	pkg "kadabra/pkg/lang"
 	"kadabra/pkg/req"
 	"kadabra/pkg/res"
 	"net/http"
@@ -33,8 +34,17 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+
+	translations := make([]products_type_service.TranslationInput, len(body.Translations))
+	for i, t := range body.Translations {
+		translations[i] = products_type_service.TranslationInput{
+			LanguageCode: t.LanguageCode,
+			Name:         t.Name,
+		}
+	}
+
 	input := &products_type_service.CreateInput{
-		Name:          body.Name,
+		Translations:  translations,
 		SubCategoryId: body.SubCategoryId,
 	}
 	newProductsType, err := h.service.Create(r.Context(), input)
@@ -45,7 +55,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	productsType, err := h.service.GetAll(r.Context())
+	lang := pkg.GetLang(r)
+	productsType, err := h.service.GetAll(r.Context(), lang)
 	if check.CheckErr(&w, err) {
 		return
 	}
@@ -58,7 +69,8 @@ func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 	if check.CheckErr(&w, err) {
 		return
 	}
-	productsType, err := h.service.GetById(r.Context(), id)
+	lang := pkg.GetLang(r)
+	productsType, err := h.service.GetById(r.Context(), id, lang)
 	if check.CheckErr(&w, err) {
 		return
 	}

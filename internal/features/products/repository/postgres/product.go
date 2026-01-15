@@ -3,13 +3,17 @@ package products_postgres
 import (
 	"context"
 	"errors"
+
 	sq "github.com/Masterminds/squirrel"
+	"github.com/gosimple/slug"
+
+	"kadabra/internal/core"
+	"kadabra/internal/core/config"
+	products_model "kadabra/internal/features/products/model"
+	products_service "kadabra/internal/features/products/service"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"kadabra/internal/core"
-	"kadabra/internal/core/config"
-	"kadabra/internal/features/products/model"
 )
 
 type Product struct {
@@ -20,57 +24,96 @@ func NewProductPostgres(db *pgxpool.Pool) *Product {
 	return &Product{db: db}
 }
 
-func (c *Product) Create(ctx context.Context, product *products_model.Product) (*products_model.Product, error) {
+func (c *Product) Create(ctx context.Context, req *products_service.CreateInput) (*products_model.ProductWithTranslations, error) {
+	tx, err := c.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
 	query, args, err := config.Psql.
 		Insert("products").
-		Columns("name", "products_type_id", "manufacturer_id", "short_description", "description").
-		Values(
-			product.Name,
-			product.ProductsTypeId,
-			product.ManufacturerId,
-			product.ShortDescription,
-			product.Description).
-		Suffix("RETURNING id, name, products_type_id, manufacturer_id, short_description, description, created_at, updated_at").
+		Columns("products_type_id", "manufacturer_id").
+		Values(req.ProductsTypeId, req.ManufacturerId).
+		Suffix("RETURNING id, products_type_id, manufacturer_id, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
 		return nil, core.BuildSQLError(err)
 	}
 
-	rows, err := c.db.Query(ctx, query, args...)
+	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
 		return nil, core.QueryError(err)
 	}
 	defer rows.Close()
 
-	result, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[products_model.Product])
+	productWT, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[products_model.ProductWithoutTranslations])
 	if err != nil {
 		return nil, core.QueryError(err)
 	}
 
-	return result, nil
+	product := &products_model.ProductWithTranslations{
+		Id:             productWT.Id,
+		ProductsTypeId: productWT.ProductsTypeId,
+		ManufacturerId: productWT.ManufacturerId,
+		Translations:   make([]*products_model.ProductTranslate, 0),
+		CreatedAt:      productWT.CreatedAt,
+		UpdatedAt:      productWT.UpdatedAt,
+	}
+
+	for _, v := range req.Translations {
+		slugText := slug.Make(v.Name)
+
+		query, args, err := config.Psql.
+			Insert("product_translations").
+			Columns("product_id", "language_code", "name", "slug", "short_description", "description").
+			Values(productWT.Id, v.LanguageCode, v.Name, slugText, v.ShortDescription, v.Description).
+			Suffix("RETURNING id, product_id, language_code, name, slug, short_description, description, created_at, updated_at").
+			ToSql()
+		if err != nil {
+			return nil, core.BuildSQLError(err)
+		}
+
+		rows, err := tx.Query(ctx, query, args...)
+		if err != nil {
+			return nil, core.QueryError(err)
+		}
+
+		translate, err := pgx.CollectOneRow(
+			rows,
+			pgx.RowToAddrOfStructByName[products_model.ProductTranslate],
+		)
+		rows.Close()
+
+		if err != nil {
+			return nil, core.QueryError(err)
+		}
+
+		product.Translations = append(product.Translations, translate)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return product, nil
 }
 
-func (c *Product) GetAll(ctx context.Context) ([]*products_model.Product, error) {
-	query, _, err := config.Psql.
-		Select(
-			"id",
-			"name",
-			"products_type_id",
-			"manufacturer_id",
-			"short_description",
-			"description",
-			"created_at",
-			"updated_at").
-		From("products").
+func (c *Product) GetAll(ctx context.Context, lang string) ([]*products_model.Product, error) {
+	query, args, err := config.Psql.
+		Select("p.id", "pt.name", "pt.slug", "p.products_type_id", "p.manufacturer_id", "pt.short_description", "pt.description", "p.created_at", "p.updated_at").
+		From("products p").
+		Join("product_translations pt on p.id = pt.product_id").
+		Where(sq.Eq{"pt.language_code": lang}).
 		Limit(30).
-		OrderBy("created_at ASC").
+		OrderBy("pt.name ASC").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)
 	}
 
-	rows, err := c.db.Query(ctx, query)
+	rows, err := c.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, core.QueryError(err)
 	}
@@ -84,20 +127,23 @@ func (c *Product) GetAll(ctx context.Context) ([]*products_model.Product, error)
 	return products, nil
 }
 
-func (c *Product) GetById(ctx context.Context, id int) (*products_model.Product, error) {
+func (c *Product) GetById(ctx context.Context, id int, lang string) (*products_model.Product, error) {
 	query, args, err := config.Psql.
 		Select(
-			"id",
-			"name",
-			"products_type_id",
-			"manufacturer_id",
-			"short_description",
-			"description",
-			"created_at",
-			"updated_at",
+			"p.id",
+			"pt.name",
+			"pt.slug",
+			"p.products_type_id",
+			"p.manufacturer_id",
+			"pt.short_description",
+			"pt.description",
+			"p.created_at",
+			"p.updated_at",
 		).
-		From("products").
-		Where(sq.Eq{"id": id}).
+		From("products p").
+		Join("product_translations pt on p.id = pt.product_id").
+		Where(sq.Eq{"pt.language_code": lang, "p.id": id}).
+		OrderBy("pt.name ASC").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)
@@ -193,18 +239,20 @@ func (c *Product) GetByCategoryIds(ctx context.Context, categoryIds []int) ([]*p
 	query, args, err := config.Psql.
 		Select(
 			"p.id",
-			"p.name",
+			"pt.name",
+			"pt.slug",
 			"p.products_type_id",
 			"p.manufacturer_id",
-			"p.short_description",
-			"p.description",
+			"pt.short_description",
+			"pt.description",
 			"p.created_at",
 			"p.updated_at",
 		).
 		From("products p").
-		Join("products_type pt ON p.products_type_id = pt.id").
-		Join("sub_categories sc ON pt.sub_category_id = sc.id").
-		Where(sq.Eq{"sc.category_id": categoryIds}).
+		Join("product_translations pt on p.id = pt.product_id").
+		Join("products_type pty ON p.products_type_id = pty.id").
+		Join("sub_categories sc ON pty.sub_category_id = sc.id").
+		Where(sq.Eq{"sc.category_id": categoryIds, "pt.language_code": "ru"}).
 		Limit(30).
 		OrderBy("p.created_at ASC").
 		ToSql()

@@ -2,8 +2,8 @@ package categories_http
 
 import (
 	categories_service "kadabra/internal/features/categories/service"
-	"kadabra/pkg"
 	"kadabra/pkg/check"
+	pkg "kadabra/pkg/lang"
 	"kadabra/pkg/req"
 	"kadabra/pkg/res"
 	"net/http"
@@ -25,7 +25,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("GET /categories", handler.GetAll)
 	//router.HandleFunc("GET /categories/{id}", handler.GetById)
 	router.HandleFunc("GET /categories/{slug}", handler.GetBySlug)
-	//router.HandleFunc("DELETE /categories/{id}", handler.Delete)
+	router.HandleFunc("DELETE /categories/{id}", handler.Delete)
 	//router.HandleFunc("PATCH /categories/{id}", handler.Patch)
 }
 
@@ -35,8 +35,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	translations := make([]categories_service.TranslationInput, len(body.Translations))
+	for i, t := range body.Translations {
+		translations[i] = categories_service.TranslationInput{
+			LanguageCode: t.LanguageCode,
+			Name:         t.Name,
+		}
+	}
+
 	input := &categories_service.CreateInput{
-		Translations: body.Translations,
+		Translations: translations,
 	}
 	newCategory, err := h.service.Create(r.Context(), input)
 	if check.CheckErr(&w, err) {
@@ -79,19 +87,19 @@ func (h *Handler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 	res.Json(w, category, http.StatusOK)
 }
 
-//func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-//	idStr := r.PathValue("id")
-//	id, err := strconv.Atoi(idStr)
-//	if check.CheckErr(&w, err) {
-//		return
-//	}
-//	err = h.service.Delete(r.Context(), id)
-//	if check.CheckErr(&w, err) {
-//		return
-//	}
-//	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful"}, http.StatusOK)
-//}
-//
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if check.CheckErr(&w, err) {
+		return
+	}
+	err = h.service.Delete(r.Context(), id)
+	if check.CheckErr(&w, err) {
+		return
+	}
+	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful"}, http.StatusOK)
+}
+
 //func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 //	body, err := req.HandleBody[patchDTO](&w, r)
 //	if err != nil {

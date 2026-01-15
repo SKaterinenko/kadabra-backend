@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"kadabra/internal/core/config"
+	categories_model "kadabra/internal/features/categories/model"
+	categories_service "kadabra/internal/features/categories/service"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/gosimple/slug"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"kadabra/internal/core/config"
-	categories_model "kadabra/internal/features/categories/model"
-	categories_service "kadabra/internal/features/categories/service"
 )
 
 type Category struct {
@@ -29,76 +30,62 @@ func (c *Category) Create(ctx context.Context, req *categories_service.CreateInp
 	defer tx.Rollback(ctx)
 
 	// 1. Создаем категорию
-	var category categories_model.Category
+	var categoryWT categories_model.Category
 	err = tx.QueryRow(
 		ctx,
 		"INSERT INTO categories DEFAULT VALUES RETURNING id, created_at, updated_at",
-	).Scan(&category.Id, &category.CreatedAt, &category.UpdatedAt)
+	).Scan(&categoryWT.Id, &categoryWT.CreatedAt, &categoryWT.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("insert category: %w", err)
 	}
 
-	// 2. Подготавливаем вставку переводов
-	insertBuilder := config.Psql.Insert("category_translations").
-		Columns("category_id", "language_code", "name", "slug").
-		Suffix("RETURNING id, category_id, language_code, name, slug, created_at, updated_at")
+	category := &categories_model.CategoryWithTranslations{
+		Id:           categoryWT.Id,
+		Translations: make([]*categories_model.CategoryTranslate, 0),
+		CreatedAt:    categoryWT.CreatedAt,
+		UpdatedAt:    categoryWT.UpdatedAt,
+	}
 
-	// Сохраняем порядок языков для последующего чтения
-	langCodes := make([]string, 0, len(req.Translations))
+	for _, v := range req.Translations {
+		generatedSlug := slug.Make(v.Name)
 
-	for langCode, trans := range req.Translations {
-		generatedSlug := slug.Make(trans.Name)
+		query, args, err := config.Psql.
+			Insert("category_translations").
+			Columns("category_id", "language_code", "name", "slug").
+			Values(categoryWT.Id, v.LanguageCode, v.Name, generatedSlug).
+			Suffix("RETURNING id, category_id, language_code, name, slug, created_at, updated_at").
+			ToSql()
+		if err != nil {
+			return nil, fmt.Errorf("build translation insert: %w", err)
+		}
 
-		insertBuilder = insertBuilder.Values(
-			category.Id,
-			langCode,
-			trans.Name,
-			generatedSlug,
+		rows, err := tx.Query(ctx, query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("insert translation: %w", err)
+		}
+
+		translate, err := pgx.CollectOneRow(
+			rows,
+			pgx.RowToAddrOfStructByName[categories_model.CategoryTranslate],
 		)
+		rows.Close()
 
-		langCodes = append(langCodes, langCode)
+		if err != nil {
+			return nil, fmt.Errorf("collect translation: %w", err)
+		}
+
+		category.Translations = append(category.Translations, translate)
 	}
 
-	// 3. Вставляем переводы и читаем результаты
-	insertTransSQL, args, err := insertBuilder.ToSql()
+	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("build translations insert: %w", err)
-	}
-
-	rows, err := tx.Query(ctx, insertTransSQL, args...)
-	if err != nil {
-		return nil, fmt.Errorf("insert translations: %w", err)
-	}
-	defer rows.Close()
-
-	// 4. Читаем возвращенные данные с помощью pgx
-	translationsList, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[categories_model.CategoryTranslation])
-	if err != nil {
-		return nil, fmt.Errorf("collect translations: %w", err)
-	}
-
-	// 5. Преобразуем список в map по language_code
-	translations := make(map[string]categories_model.CategoryTranslation)
-	for _, trans := range translationsList {
-		translations[trans.LanguageCode] = *trans
-	}
-
-	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit transaction: %w", err)
 	}
-
-	result := &categories_model.CategoryWithTranslations{
-		Id:           category.Id,
-		Translations: translations,
-		CreatedAt:    category.CreatedAt,
-		UpdatedAt:    category.UpdatedAt,
-	}
-
-	return result, nil
+	return category, nil
 }
 
-func (c *Category) GetAll(ctx context.Context, language string) ([]*categories_model.CategoryResponse, error) {
+func (c *Category) GetAll(ctx context.Context, language string) ([]*categories_model.Category, error) {
 	query, args, err := config.Psql.
 		Select(
 			"c.id",
@@ -123,7 +110,7 @@ func (c *Category) GetAll(ctx context.Context, language string) ([]*categories_m
 	}
 	defer rows.Close()
 
-	categories, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[categories_model.CategoryResponse])
+	categories, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[categories_model.Category])
 	if err != nil {
 		return nil, fmt.Errorf("collect rows: %w", err)
 	}
@@ -131,7 +118,7 @@ func (c *Category) GetAll(ctx context.Context, language string) ([]*categories_m
 	return categories, nil
 }
 
-func (c *Category) GetById(ctx context.Context, id int, language string) (*categories_model.CategoryResponse, error) {
+func (c *Category) GetById(ctx context.Context, id int, language string) (*categories_model.Category, error) {
 	query, args, err := config.Psql.
 		Select(
 			"c.id",
@@ -141,7 +128,7 @@ func (c *Category) GetById(ctx context.Context, id int, language string) (*categ
 			"c.updated_at",
 		).
 		From("categories c").
-		InnerJoin("category_translations ct ON c.id = ct.category_id").
+		Join("category_translations ct ON c.id = ct.category_id").
 		Where(sq.Eq{
 			"c.id":             id,
 			"ct.language_code": language,
@@ -158,7 +145,7 @@ func (c *Category) GetById(ctx context.Context, id int, language string) (*categ
 	}
 	defer rows.Close()
 
-	category, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[categories_model.CategoryResponse])
+	category, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[categories_model.Category])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("category not found for language %s", language)
@@ -169,7 +156,7 @@ func (c *Category) GetById(ctx context.Context, id int, language string) (*categ
 	return category, nil
 }
 
-func (c *Category) GetBySlug(ctx context.Context, slug, language string) (*categories_model.CategoryResponse, error) {
+func (c *Category) GetBySlug(ctx context.Context, slug, language string) (*categories_model.Category, error) {
 	query, args, err := config.Psql.
 		Select(
 			"c.id",
@@ -196,9 +183,9 @@ func (c *Category) GetBySlug(ctx context.Context, slug, language string) (*categ
 	}
 	defer rows.Close()
 
-	category, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[categories_model.CategoryResponse])
+	category, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[categories_model.Category])
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("category not found")
 		}
 		return nil, fmt.Errorf("collect row: %w", err)

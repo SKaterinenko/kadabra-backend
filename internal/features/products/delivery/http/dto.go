@@ -1,11 +1,16 @@
 package products_http
 
-type createDTO struct {
+type TranslationInput struct {
+	LanguageCode     string `json:"language_code" validate:"required"`
 	Name             string `json:"name" validate:"required"`
-	Description      string `json:"description" validate:"required"`
 	ShortDescription string `json:"short_description" validate:"required"`
-	ProductsTypeId   int    `json:"products_type_id" validate:"required"`
-	ManufacturerId   int    `json:"manufacturer_id" validate:"required"`
+	Description      string `json:"description" validate:"required"`
+}
+
+type createDTO struct {
+	Translations   []TranslationInput `json:"translations" validate:"required,min=1,dive"`
+	ProductsTypeId int                `json:"products_type_id" validate:"required"`
+	ManufacturerId int                `json:"manufacturer_id" validate:"required"`
 }
 
 type patchDTO struct {

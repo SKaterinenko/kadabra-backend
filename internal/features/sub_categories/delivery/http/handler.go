@@ -2,8 +2,8 @@ package sub_categories_http
 
 import (
 	sub_categories_service "kadabra/internal/features/sub_categories/service"
-	"kadabra/pkg"
 	"kadabra/pkg/check"
+	pkg "kadabra/pkg/lang"
 	"kadabra/pkg/req"
 	"kadabra/pkg/res"
 	"net/http"

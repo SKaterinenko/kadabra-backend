@@ -1,13 +1,12 @@
 package categories_http
 
-import categories_service "kadabra/internal/features/categories/service"
-
 type TranslationInput struct {
-	Name string `json:"name" binding:"required,min=1,max=255"`
+	LanguageCode string `json:"language_code" binding:"required,len=2,alpha"`
+	Name         string `json:"name" binding:"required,min=1,max=255"`
 }
 
 type createDTO struct {
-	categories_service.CreateInput
+	Translations []TranslationInput `json:"translations" binding:"required,min=1,dive"`
 }
 
 type patchDTO struct {

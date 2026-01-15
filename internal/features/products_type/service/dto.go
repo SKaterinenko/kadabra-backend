@@ -1,10 +1,13 @@
 package products_type_service
 
-import ()
+type TranslationInput struct {
+	LanguageCode string `json:"language_code"`
+	Name         string `json:"name"`
+}
 
 type CreateInput struct {
-	Name          string
-	SubCategoryId int
+	Translations  []TranslationInput `json:"translations"`
+	SubCategoryId int                `json:"sub_category_id"`
 }
 
 type PatchInput struct {

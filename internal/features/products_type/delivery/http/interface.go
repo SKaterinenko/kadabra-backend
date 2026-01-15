@@ -9,9 +9,9 @@ import (
 )
 
 type ProductsTypeInterface interface {
-	Create(ctx context.Context, subCategory *products_type_service.CreateInput) (*products_type_model.ProductsType, error)
-	GetAll(ctx context.Context) ([]*products_type_model.ProductsType, error)
-	GetById(ctx context.Context, id int) (*products_type_model.ProductsType, error)
+	Create(ctx context.Context, subCategory *products_type_service.CreateInput) (*products_type_model.ProductsTypeWithTranslations, error)
+	GetAll(ctx context.Context, lang string) ([]*products_type_model.ProductsType, error)
+	GetById(ctx context.Context, id int, lang string) (*products_type_model.ProductsType, error)
 	Delete(ctx context.Context, id int) error
 	Patch(ctx context.Context, id int, update *products_type_service.PatchInput) (*products_type_model.ProductsType, error)
 	GetProductsTypeByCategorySlug(ctx context.Context, slug string) ([]*sub_categories_model.SubCategoryWithProductsType, error)

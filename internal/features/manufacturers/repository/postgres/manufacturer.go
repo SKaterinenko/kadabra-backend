@@ -3,14 +3,17 @@ package manufacturers_postgres
 import (
 	"context"
 	"errors"
+
 	sq "github.com/Masterminds/squirrel"
+	"github.com/gosimple/slug"
+
+	"kadabra/internal/core"
+	"kadabra/internal/core/config"
+	manufacturers_model "kadabra/internal/features/manufacturers/model"
+	manufacturers_service "kadabra/internal/features/manufacturers/service"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"kadabra/internal/core"
-	"kadabra/internal/core/config"
-	"kadabra/internal/features/manufacturers/model"
-	manufacturers_service "kadabra/internal/features/manufacturers/service"
 )
 
 type Manufacturer struct {
@@ -21,44 +24,92 @@ func NewManufacturerPostgres(db *pgxpool.Pool) manufacturers_service.Manufacture
 	return &Manufacturer{db: db}
 }
 
-func (m *Manufacturer) Create(ctx context.Context, manufacturer *manufacturers_model.Manufacturer) (*manufacturers_model.Manufacturer, error) {
+func (m *Manufacturer) Create(ctx context.Context, req *manufacturers_service.CreateInput) (*manufacturers_model.ManufacturerWithTranslations, error) {
+	tx, err := m.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
 	query, args, err := config.Psql.
 		Insert("manufacturers").
-		Columns("name", "slug").
-		Values(manufacturer.Name, manufacturer.Slug).
-		Suffix("RETURNING id, name, slug, created_at, updated_at").
+		Suffix("RETURNING id, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
 		return nil, core.BuildSQLError(err)
 	}
 
-	rows, err := m.db.Query(ctx, query, args...)
+	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
 		return nil, core.QueryError(err)
 	}
 	defer rows.Close()
 
-	result, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[manufacturers_model.Manufacturer])
+	manufacturerWT, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[manufacturers_model.ManufacturerWithoutTranslations])
 	if err != nil {
 		return nil, core.QueryError(err)
 	}
 
-	return result, nil
+	manufacturer := &manufacturers_model.ManufacturerWithTranslations{
+		Id:           manufacturerWT.Id,
+		Translations: make([]*manufacturers_model.ManufacturerTranslate, 0),
+		CreatedAt:    manufacturerWT.CreatedAt,
+		UpdatedAt:    manufacturerWT.UpdatedAt,
+	}
+
+	for _, v := range req.Translations {
+		slugText := slug.Make(v.Name)
+
+		query, args, err := config.Psql.
+			Insert("manufacturer_translations").
+			Columns("manufacturer_id", "language_code", "name", "slug", "description").
+			Values(manufacturerWT.Id, v.LanguageCode, v.Name, slugText, v.Description).
+			Suffix("RETURNING id, manufacturer_id, language_code, name, slug, description, created_at, updated_at").
+			ToSql()
+		if err != nil {
+			return nil, core.BuildSQLError(err)
+		}
+
+		rows, err := tx.Query(ctx, query, args...)
+		if err != nil {
+			return nil, core.QueryError(err)
+		}
+
+		translate, err := pgx.CollectOneRow(
+			rows,
+			pgx.RowToAddrOfStructByName[manufacturers_model.ManufacturerTranslate],
+		)
+		rows.Close()
+
+		if err != nil {
+			return nil, core.QueryError(err)
+		}
+
+		manufacturer.Translations = append(manufacturer.Translations, translate)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return manufacturer, nil
 }
 
-func (m *Manufacturer) GetAll(ctx context.Context) ([]*manufacturers_model.Manufacturer, error) {
-	query, _, err := config.Psql.
-		Select("id", "name", "slug", "created_at", "updated_at").
-		From("manufacturers").
+func (m *Manufacturer) GetAll(ctx context.Context, lang string) ([]*manufacturers_model.Manufacturer, error) {
+	query, args, err := config.Psql.
+		Select("m.id", "mt.name", "mt.slug", "mt.description", "m.created_at", "m.updated_at").
+		From("manufacturers m").
+		Join("manufacturer_translations mt on m.id = mt.manufacturer_id").
+		Where(sq.Eq{"mt.language_code": lang}).
 		Limit(30).
-		OrderBy("created_at ASC").
+		OrderBy("mt.name ASC").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)
 	}
 
-	rows, err := m.db.Query(ctx, query)
+	rows, err := m.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, core.QueryError(err)
 	}
@@ -72,11 +123,13 @@ func (m *Manufacturer) GetAll(ctx context.Context) ([]*manufacturers_model.Manuf
 	return manufacturers, nil
 }
 
-func (m *Manufacturer) GetById(ctx context.Context, id int) (*manufacturers_model.Manufacturer, error) {
+func (m *Manufacturer) GetById(ctx context.Context, id int, lang string) (*manufacturers_model.Manufacturer, error) {
 	query, args, err := config.Psql.
-		Select("id", "name", "slug", "created_at", "updated_at").
-		From("manufacturers").
-		Where(sq.Eq{"id": id}).
+		Select("m.id", "mt.name", "mt.slug", "mt.description", "m.created_at", "m.updated_at").
+		From("manufacturers m").
+		Join("manufacturer_translations mt on m.id = mt.manufacturer_id").
+		Where(sq.Eq{"mt.language_code": lang, "m.id": id}).
+		OrderBy("mt.name ASC").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)

@@ -7,9 +7,9 @@ import (
 
 type CategoryRepository interface {
 	Create(ctx context.Context, req *CreateInput) (*categories_model.CategoryWithTranslations, error)
-	GetAll(ctx context.Context, language string) ([]*categories_model.CategoryResponse, error)
-	GetById(ctx context.Context, id int, language string) (*categories_model.CategoryResponse, error)
-	GetBySlug(ctx context.Context, slug, language string) (*categories_model.CategoryResponse, error)
-	//Delete(ctx context.Context, id int) error
+	GetAll(ctx context.Context, language string) ([]*categories_model.Category, error)
+	GetById(ctx context.Context, id int, language string) (*categories_model.Category, error)
+	GetBySlug(ctx context.Context, slug, language string) (*categories_model.Category, error)
+	Delete(ctx context.Context, id int) error
 	//Patch(ctx context.Context, id int, category *categories_model.CategoryPatch) (*categories_model.Category, error)
 }
