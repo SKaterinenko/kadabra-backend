@@ -3,7 +3,6 @@ package products_type_postgres
 import (
 	"context"
 	"errors"
-
 	sq "github.com/Masterminds/squirrel"
 
 	"kadabra/internal/core"
@@ -124,23 +123,21 @@ func (c *ProductsType) GetAll(ctx context.Context, lang string) ([]*products_typ
 	return productsTypes, nil
 }
 
-func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, id string) ([]*sub_categories_model.SubCategoryWithProductsType, error) {
+func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, slug string, lang string) ([]*sub_categories_model.SubCategoryWithProductsType, error) {
 	query, args, err := config.Psql.
 		Select(
-			"sc.id",
-			"sc.category_id",
-			"sc.created_at",
-			"sc.updated_at",
-			"pt.id",
-			"pt.name",
-			"pt.sub_category_id",
-			"pt.created_at",
-			"pt.updated_at").
-		From("sub_categories sc").
-		Join("products_type pt ON sc.id = pt.sub_category_id").
-		Where(sq.Eq{"sc.category_id": id}).
+			"sc.id, sc.category_id, sct.name, sct.slug, sc.created_at, sc.updated_at, pt.id, pt.sub_category_id, ptt.name, ptt.created_at, ptt.updated_at").
+		From("product_type_translations ptt").
+		Join("products_type pt ON ptt.product_type_id = pt.id").
+		Where(sq.Eq{"ptt.language_code": lang}).
+		Join("sub_categories sc ON sc.id = pt.sub_category_id").
+		Join("sub_category_translations sct ON sct.sub_category_id = sc.id").
+		Where(sq.Eq{"sct.language_code": lang}).
+		Join("categories c ON c.id = sc.category_id").
+		Join("category_translations ct ON ct.category_id = c.id").
+		Where(sq.Eq{"ct.slug": slug}).
 		Limit(30).
-		OrderBy("created_at ASC").
+		OrderBy("ptt.created_at ASC").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)
@@ -152,45 +149,45 @@ func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, id str
 	}
 	defer rows.Close()
 
-	mapSc := map[int]*sub_categories_model.SubCategoryWithProductsType{}
+	mapSc := make(map[int]*sub_categories_model.SubCategoryWithProductsType)
 
 	for rows.Next() {
-		var scWithProductType sub_categories_model.SubCategoryWithProductsType
+		var emptySC sub_categories_model.SubCategoryWithProductsType
 		var productsType products_type_model.ProductsType
 
 		if err := rows.Scan(
-			&scWithProductType.Id,
-			&scWithProductType.CategoryId,
-			&scWithProductType.CreatedAt,
-			&scWithProductType.UpdatedAt,
+			&emptySC.Id,
+			&emptySC.CategoryId,
+			&emptySC.Name,
+			&emptySC.Slug,
+			&emptySC.CreatedAt,
+			&emptySC.UpdatedAt,
 			&productsType.Id,
-			&productsType.Name,
 			&productsType.SubCategoryId,
+			&productsType.Name,
 			&productsType.CreatedAt,
 			&productsType.UpdatedAt,
 		); err != nil {
-			return nil, core.ScanError(err)
+			return nil, err
 		}
 
-		val, ok := mapSc[scWithProductType.Id]
+		v, ok := mapSc[emptySC.Id]
+
 		if !ok {
-			scWithProductType.ProductsType = append(scWithProductType.ProductsType, &productsType)
-			mapSc[scWithProductType.Id] = &scWithProductType
+			emptySC.ProductsType = append(emptySC.ProductsType, &productsType)
+			mapSc[emptySC.Id] = &emptySC
 		} else {
-			val.ProductsType = append(val.ProductsType, &productsType)
+			v.ProductsType = append(v.ProductsType, &productsType)
 		}
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, core.RowsError(err)
+	var out = make([]*sub_categories_model.SubCategoryWithProductsType, 0, len(mapSc))
+
+	for _, v := range mapSc {
+		out = append(out, v)
 	}
 
-	subCategoryWithProductsTypes := make([]*sub_categories_model.SubCategoryWithProductsType, 0, len(mapSc))
-	for _, val := range mapSc {
-		subCategoryWithProductsTypes = append(subCategoryWithProductsTypes, val)
-	}
-
-	return subCategoryWithProductsTypes, nil
+	return out, nil
 }
 
 func (c *ProductsType) GetById(ctx context.Context, id int, lang string) (*products_type_model.ProductsType, error) {

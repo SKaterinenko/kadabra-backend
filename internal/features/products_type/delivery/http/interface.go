@@ -14,5 +14,5 @@ type ProductsTypeInterface interface {
 	GetById(ctx context.Context, id int, lang string) (*products_type_model.ProductsType, error)
 	Delete(ctx context.Context, id int) error
 	Patch(ctx context.Context, id int, update *products_type_service.PatchInput) (*products_type_model.ProductsType, error)
-	GetProductsTypeByCategorySlug(ctx context.Context, slug string) ([]*sub_categories_model.SubCategoryWithProductsType, error)
+	GetProductsTypeByCategorySlug(ctx context.Context, slug, lang string) ([]*sub_categories_model.SubCategoryWithProductsType, error)
 }

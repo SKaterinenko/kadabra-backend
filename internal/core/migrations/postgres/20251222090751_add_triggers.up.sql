@@ -30,3 +30,28 @@ CREATE TRIGGER manufacturers_set_updated_at
     BEFORE UPDATE ON manufacturers
     FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER category_translations_set_updated_at
+    BEFORE UPDATE ON category_translations
+    FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER manufacturer_translations_set_updated_at
+    BEFORE UPDATE ON manufacturer_translations
+    FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER product_translations_set_updated_at
+    BEFORE UPDATE ON product_translations
+    FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER product_type_translations_set_updated_at
+    BEFORE UPDATE ON product_type_translations
+    FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER sub_category_translations_set_updated_at
+    BEFORE UPDATE ON sub_category_translations
+    FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();

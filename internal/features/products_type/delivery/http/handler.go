@@ -112,7 +112,8 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetProductsTypeByCategorySlug(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
-	productsType, err := h.service.GetProductsTypeByCategorySlug(r.Context(), slug)
+	lang := pkg.GetLang(r)
+	productsType, err := h.service.GetProductsTypeByCategorySlug(r.Context(), slug, lang)
 	if check.CheckErr(&w, err) {
 		return
 	}

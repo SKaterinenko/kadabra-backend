@@ -13,5 +13,5 @@ type ProductsTypeRepository interface {
 	GetById(ctx context.Context, id int, lang string) (*products_type_model.ProductsType, error)
 	Delete(ctx context.Context, id int) error
 	Patch(ctx context.Context, id int, productsType *products_type_model.ProductsTypePatch) (*products_type_model.ProductsType, error)
-	GetProductsTypeByCategorySlug(ctx context.Context, slug string) ([]*sub_categories_model.SubCategoryWithProductsType, error)
+	GetProductsTypeByCategorySlug(ctx context.Context, slug string, lang string) ([]*sub_categories_model.SubCategoryWithProductsType, error)
 }

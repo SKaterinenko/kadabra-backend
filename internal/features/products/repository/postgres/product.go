@@ -102,7 +102,7 @@ func (c *Product) Create(ctx context.Context, req *products_service.CreateInput)
 
 func (c *Product) GetAll(ctx context.Context, lang string) ([]*products_model.Product, error) {
 	query, args, err := config.Psql.
-		Select("p.id", "pt.name", "pt.slug", "p.products_type_id", "p.manufacturer_id", "pt.short_description", "pt.description", "p.created_at", "p.updated_at").
+		Select("p.id", "pt.name", "pt.slug", "p.product_type_id", "p.manufacturer_id", "pt.short_description", "pt.description", "p.created_at", "p.updated_at").
 		From("products p").
 		Join("product_translations pt on p.id = pt.product_id").
 		Where(sq.Eq{"pt.language_code": lang}).

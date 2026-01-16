@@ -57,6 +57,11 @@ func NewSubCategoryPatch(name string) *SubCategoryPatch {
 }
 
 type SubCategoryWithProductsType struct {
-	SubCategoryWithTranslations
+	Id           int                                 `json:"id" db:"id"`
+	CategoryId   int                                 `json:"category_id" db:"category_id"`
+	Name         string                              `json:"name" db:"name"`
+	Slug         string                              `json:"slug" db:"slug"`
 	ProductsType []*products_type_model.ProductsType `json:"products_type" db:"products_type"`
+	CreatedAt    time.Time                           `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time                           `json:"updated_at" db:"updated_at"`
 }

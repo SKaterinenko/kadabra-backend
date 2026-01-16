@@ -1,10 +1,12 @@
 package lang
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func GetLang(r *http.Request) string {
 	lang := r.Header.Get("Accept-Language")
-	if lang == "" {
+	if len(lang) <= 1 {
 		lang = "ru"
 	}
 	return lang[:2]

@@ -56,8 +56,8 @@ func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*produ
 	return out, nil
 }
 
-func (s *Service) GetProductsTypeByCategorySlug(ctx context.Context, slug string) ([]*sub_categories_model.SubCategoryWithProductsType, error) {
-	out, err := s.repo.GetProductsTypeByCategorySlug(ctx, slug)
+func (s *Service) GetProductsTypeByCategorySlug(ctx context.Context, slug, lang string) ([]*sub_categories_model.SubCategoryWithProductsType, error) {
+	out, err := s.repo.GetProductsTypeByCategorySlug(ctx, slug, lang)
 	if err != nil {
 		return nil, err
 	}
