@@ -51,7 +51,7 @@ func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*produ
 		*update.Name,
 		*update.Description,
 		*update.ShortDescription,
-		*update.ProductsTypeId,
+		*update.ProductTypeId,
 		*update.ManufacturerId)
 	out, err := s.repo.Patch(ctx, id, newPatch)
 	if err != nil {
@@ -60,8 +60,16 @@ func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*produ
 	return out, nil
 }
 
-func (s *Service) GetByCategoryIds(ctx context.Context, categoryIds []int) ([]*products_model.Product, error) {
-	out, err := s.repo.GetByCategoryIds(ctx, categoryIds)
+func (s *Service) GetByCategoryIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error) {
+	out, err := s.repo.GetByCategoryIds(ctx, categoryIds, lang)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *Service) GetByProductsTypeIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error) {
+	out, err := s.repo.GetByProductsTypeIds(ctx, categoryIds, lang)
 	if err != nil {
 		return nil, err
 	}

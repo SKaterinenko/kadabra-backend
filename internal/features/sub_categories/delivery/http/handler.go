@@ -11,11 +11,11 @@ import (
 )
 
 type HandlerDeps struct {
-	Service *sub_categories_service.Service
+	Service SubCategoriesService
 }
 
 type Handler struct {
-	service *sub_categories_service.Service
+	service SubCategoriesService
 }
 
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {

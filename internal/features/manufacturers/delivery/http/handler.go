@@ -11,11 +11,11 @@ import (
 )
 
 type HandlerDeps struct {
-	Service *manufacturers_service.Service
+	Service ManufacturerService
 }
 
 type Handler struct {
-	service *manufacturers_service.Service
+	service ManufacturerService
 }
 
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
@@ -38,12 +38,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	for i, t := range body.Translations {
 		translations[i] = manufacturers_service.TranslationInput{
 			LanguageCode: t.LanguageCode,
-			Name:         t.Name,
 			Description:  t.Description,
 		}
 	}
 
 	input := &manufacturers_service.CreateInput{
+		Name:         body.Name,
 		Translations: translations,
 	}
 	newManufacturer, err := h.service.Create(r.Context(), input)

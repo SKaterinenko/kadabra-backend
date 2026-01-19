@@ -8,7 +8,7 @@ import (
 	sub_categories_model "kadabra/internal/features/sub_categories/model"
 )
 
-type ProductsTypeInterface interface {
+type ProductsTypeService interface {
 	Create(ctx context.Context, subCategory *products_type_service.CreateInput) (*products_type_model.ProductsTypeWithTranslations, error)
 	GetAll(ctx context.Context, lang string) ([]*products_type_model.ProductsType, error)
 	GetById(ctx context.Context, id int, lang string) (*products_type_model.ProductsType, error)

@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/gosimple/slug"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"kadabra/internal/core"
@@ -60,13 +58,12 @@ func (c *SubCategory) Create(ctx context.Context, req *sub_categories_service.Cr
 	}
 
 	for _, v := range req.Translations {
-		slugText := slug.Make(v.Name)
 
 		query, args, err := config.Psql.
 			Insert("sub_category_translations").
-			Columns("sub_category_id", "language_code", "name", "slug").
-			Values(subCategoryWT.Id, v.LanguageCode, v.Name, slugText).
-			Suffix("RETURNING id, sub_category_id, language_code, name, slug, created_at, updated_at").
+			Columns("sub_category_id", "language_code", "name").
+			Values(subCategoryWT.Id, v.LanguageCode, v.Name).
+			Suffix("RETURNING id, sub_category_id, language_code, name, created_at, updated_at").
 			ToSql()
 		if err != nil {
 			return nil, core.BuildSQLError(err)
@@ -99,7 +96,7 @@ func (c *SubCategory) Create(ctx context.Context, req *sub_categories_service.Cr
 
 func (c *SubCategory) GetAll(ctx context.Context, lang string) ([]*sub_categories_model.SubCategory, error) {
 	query, args, err := config.Psql.
-		Select("sc.id", "sct.name", "sct.slug", "sc.category_id", "sc.created_at", "sc.updated_at").
+		Select("sc.id", "sct.name", "sc.category_id", "sc.created_at", "sc.updated_at").
 		From("sub_categories sc").
 		Join("sub_category_translations sct on sc.id = sct.sub_category_id").
 		Where(sq.Eq{"sct.language_code": lang}).
@@ -126,7 +123,7 @@ func (c *SubCategory) GetAll(ctx context.Context, lang string) ([]*sub_categorie
 
 func (c *SubCategory) GetById(ctx context.Context, id int, lang string) (*sub_categories_model.SubCategory, error) {
 	query, args, err := config.Psql.
-		Select("sc.id", "sct.name", "sct.slug", "sc.category_id", "sc.created_at", "sc.updated_at").
+		Select("sc.id", "sct.name", "sc.category_id", "sc.created_at", "sc.updated_at").
 		From("sub_categories sc").
 		Join("sub_category_translations sct on sc.id = sct.sub_category_id").
 		Where(sq.Eq{"sct.language_code": lang, "sc.id": id}).
@@ -187,7 +184,7 @@ func (c *SubCategory) Patch(ctx context.Context, id int, update *sub_categories_
 	}
 
 	query, args, err := q.
-		Suffix("RETURNING id, name, slug, category_id, created_at, updated_at").
+		Suffix("RETURNING id, name, category_id, created_at, updated_at").
 		ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)

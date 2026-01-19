@@ -9,7 +9,7 @@ type TranslationInput struct {
 
 type CreateInput struct {
 	Translations   []TranslationInput `json:"translations"`
-	ProductsTypeId int                `json:"products_type_id"`
+	ProductTypeId  int                `json:"product_type_id"`
 	ManufacturerId int                `json:"manufacturer_id"`
 }
 
@@ -17,6 +17,6 @@ type PatchInput struct {
 	Name             *string
 	Description      *string
 	ShortDescription *string
-	ProductsTypeId   *int
+	ProductTypeId    *int
 	ManufacturerId   *int
 }

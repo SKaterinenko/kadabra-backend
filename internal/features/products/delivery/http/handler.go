@@ -11,11 +11,11 @@ import (
 )
 
 type HandlerDeps struct {
-	Service *products_service.Service
+	Service ProductsService
 }
 
 type Handler struct {
-	service *products_service.Service
+	service ProductsService
 }
 
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
@@ -27,6 +27,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("DELETE /products/{id}", handler.Delete)
 	router.HandleFunc("PATCH /products/{id}", handler.Patch)
 	router.HandleFunc("POST /productsByIds", handler.GetByCategoryIds)
+	router.HandleFunc("POST /productsByProductsTypeIds", handler.GetByProductsTypeIds)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +48,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	input := &products_service.CreateInput{
 		Translations:   translations,
-		ProductsTypeId: body.ProductsTypeId,
+		ProductTypeId:  body.ProductTypeId,
 		ManufacturerId: body.ManufacturerId,
 	}
 	newProduct, err := h.service.Create(r.Context(), input)
@@ -107,7 +108,7 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 		Name:             body.Name,
 		Description:      body.Description,
 		ShortDescription: body.ShortDescription,
-		ProductsTypeId:   body.ProductsTypeId,
+		ProductTypeId:    body.ProductTypeId,
 		ManufacturerId:   body.ManufacturerId,
 	}
 	category, err := h.service.Patch(r.Context(), id, input)
@@ -122,7 +123,21 @@ func (h *Handler) GetByCategoryIds(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	products, err := h.service.GetByCategoryIds(r.Context(), body.Ids)
+	lang := pkg.GetLang(r)
+	products, err := h.service.GetByCategoryIds(r.Context(), body.Ids, lang)
+	if check.CheckErr(&w, err) {
+		return
+	}
+	res.Json(w, products, http.StatusOK)
+}
+
+func (h *Handler) GetByProductsTypeIds(w http.ResponseWriter, r *http.Request) {
+	body, err := req.HandleBody[getByIdsDTO](&w, r)
+	if check.CheckErr(&w, err) {
+		return
+	}
+	lang := pkg.GetLang(r)
+	products, err := h.service.GetByProductsTypeIds(r.Context(), body.Ids, lang)
 	if check.CheckErr(&w, err) {
 		return
 	}

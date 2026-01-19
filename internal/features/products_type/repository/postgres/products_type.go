@@ -126,7 +126,7 @@ func (c *ProductsType) GetAll(ctx context.Context, lang string) ([]*products_typ
 func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, slug string, lang string) ([]*sub_categories_model.SubCategoryWithProductsType, error) {
 	query, args, err := config.Psql.
 		Select(
-			"sc.id, sc.category_id, sct.name, sct.slug, sc.created_at, sc.updated_at, pt.id, pt.sub_category_id, ptt.name, ptt.created_at, ptt.updated_at").
+			"sc.id, sc.category_id, sct.name, sc.created_at, sc.updated_at, pt.id, pt.sub_category_id, ptt.name, ptt.created_at, ptt.updated_at").
 		From("product_type_translations ptt").
 		Join("products_type pt ON ptt.product_type_id = pt.id").
 		Where(sq.Eq{"ptt.language_code": lang}).
@@ -159,7 +159,6 @@ func (c *ProductsType) GetProductsTypeByCategorySlug(ctx context.Context, slug s
 			&emptySC.Id,
 			&emptySC.CategoryId,
 			&emptySC.Name,
-			&emptySC.Slug,
 			&emptySC.CreatedAt,
 			&emptySC.UpdatedAt,
 			&productsType.Id,

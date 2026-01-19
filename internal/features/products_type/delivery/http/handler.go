@@ -11,11 +11,11 @@ import (
 )
 
 type HandlerDeps struct {
-	Service ProductsTypeInterface
+	Service ProductsTypeService
 }
 
 type Handler struct {
-	service ProductsTypeInterface
+	service ProductsTypeService
 }
 
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
