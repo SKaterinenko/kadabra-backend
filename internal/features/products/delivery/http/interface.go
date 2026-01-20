@@ -14,4 +14,5 @@ type ProductsService interface {
 	Patch(ctx context.Context, id int, update *products_service.PatchInput) (*products_model.Product, error)
 	GetByCategoryIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error)
 	GetByProductsTypeIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error)
+	GetByCategorySlug(ctx context.Context, lang, slug string) ([]*products_model.Product, error)
 }

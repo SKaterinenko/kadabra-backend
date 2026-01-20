@@ -61,6 +61,10 @@ func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*produ
 }
 
 func (s *Service) GetByCategoryIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error) {
+	if len(categoryIds) == 0 {
+		return []*products_model.Product{}, nil
+	}
+
 	out, err := s.repo.GetByCategoryIds(ctx, categoryIds, lang)
 	if err != nil {
 		return nil, err
@@ -68,10 +72,26 @@ func (s *Service) GetByCategoryIds(ctx context.Context, categoryIds []int, lang 
 	return out, nil
 }
 
-func (s *Service) GetByProductsTypeIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error) {
-	out, err := s.repo.GetByProductsTypeIds(ctx, categoryIds, lang)
+func (s *Service) GetByProductsTypeIds(ctx context.Context, productsTypeIds []int, lang string) ([]*products_model.Product, error) {
+	if len(productsTypeIds) == 0 {
+		return []*products_model.Product{}, nil
+	}
+
+	out, err := s.repo.GetByProductsTypeIds(ctx, productsTypeIds, lang)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+func (s *Service) GetByCategorySlug(ctx context.Context, lang, slug string) ([]*products_model.Product, error) {
+	if slug == "" {
+		return []*products_model.Product{}, nil
+	}
+	products, err := s.repo.GetByCategorySlug(ctx, lang, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
 }

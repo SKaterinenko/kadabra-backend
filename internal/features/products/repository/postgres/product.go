@@ -326,3 +326,42 @@ func (c *Product) GetByProductsTypeIds(ctx context.Context, categoryIds []int, l
 
 	return products, nil
 }
+
+func (c *Product) GetByCategorySlug(ctx context.Context, lang, slug string) ([]*products_model.Product, error) {
+	sql, args, err := config.Psql.
+		Select(
+			"p.id",
+			"pt.name",
+			"pt.slug",
+			"p.product_type_id",
+			"p.manufacturer_id",
+			"pt.short_description",
+			"pt.description",
+			"p.created_at",
+			"p.updated_at",
+		).From("products p").
+		Join("product_translations pt on pt.product_id = p.id").
+		Where(sq.Eq{"pt.language_code": lang}).
+		Join("products_type pty on p.product_type_id = pty.id").
+		Join("sub_categories sc on pty.sub_category_id = sc.id").
+		Join("category_translations ct on sc.category_id = ct.category_id").
+		Where(sq.Eq{"ct.slug": slug}).
+		Limit(30).
+		OrderBy("p.created_at ASC").
+		ToSql()
+
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+	rows, err := c.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+	defer rows.Close()
+
+	products, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[products_model.Product])
+	if err != nil {
+		return nil, core.ScanError(err)
+	}
+	return products, nil
+}

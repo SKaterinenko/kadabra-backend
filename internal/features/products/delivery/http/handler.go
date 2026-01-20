@@ -26,8 +26,9 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("GET /products/{id}", handler.GetById)
 	router.HandleFunc("DELETE /products/{id}", handler.Delete)
 	router.HandleFunc("PATCH /products/{id}", handler.Patch)
-	router.HandleFunc("POST /productsByIds", handler.GetByCategoryIds)
-	router.HandleFunc("POST /productsByProductsTypeIds", handler.GetByProductsTypeIds)
+	router.HandleFunc("POST /products-by-category-ids", handler.GetByCategoryIds)
+	router.HandleFunc("POST /products-by-products-type-ids", handler.GetByProductsTypeIds)
+	router.HandleFunc("GET /products-by-category-slug/{slug}", handler.GetByCategorySlug)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +134,7 @@ func (h *Handler) GetByCategoryIds(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetByProductsTypeIds(w http.ResponseWriter, r *http.Request) {
 	body, err := req.HandleBody[getByIdsDTO](&w, r)
-	if check.CheckErr(&w, err) {
+	if err != nil {
 		return
 	}
 	lang := pkg.GetLang(r)
@@ -141,5 +142,16 @@ func (h *Handler) GetByProductsTypeIds(w http.ResponseWriter, r *http.Request) {
 	if check.CheckErr(&w, err) {
 		return
 	}
+	res.Json(w, products, http.StatusOK)
+}
+
+func (h *Handler) GetByCategorySlug(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	lang := pkg.GetLang(r)
+	products, err := h.service.GetByCategorySlug(r.Context(), lang, slug)
+	if check.CheckErr(&w, err) {
+		return
+	}
+
 	res.Json(w, products, http.StatusOK)
 }
