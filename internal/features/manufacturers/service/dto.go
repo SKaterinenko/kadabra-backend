@@ -11,5 +11,6 @@ type CreateInput struct {
 }
 
 type PatchInput struct {
-	Name *string
+	Translations *[]TranslationInput `json:"translations" db:"translations"`
+	CategoryIds  *[]int              `json:"category_ids" db:"category_ids"`
 }

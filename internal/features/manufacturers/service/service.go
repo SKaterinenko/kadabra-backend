@@ -46,9 +46,8 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*manufacturers_model.Manufacturer, error) {
-	newPatch := manufacturers_model.NewManufacturerPatch(*update.Name)
-	out, err := s.repo.Patch(ctx, id, newPatch)
+func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*manufacturers_model.ManufacturerWithTranslations, error) {
+	out, err := s.repo.Patch(ctx, id, update)
 	if err != nil {
 		return nil, err
 	}

@@ -4,14 +4,12 @@ import (
 	"time"
 )
 
-// CategoryWithoutTranslations represents category data without translations
 type CategoryWithoutTranslations struct {
 	Id        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Category represents category with translation data for a specific language
 type Category struct {
 	Id        int       `json:"id" db:"id"`
 	Name      string    `json:"name" db:"name"`
@@ -20,7 +18,6 @@ type Category struct {
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
-// CategoryTranslate represents a single translation entry
 type CategoryTranslate struct {
 	Id           int       `db:"id" json:"id"`
 	CategoryID   int       `db:"category_id" json:"category_id"`
@@ -40,10 +37,4 @@ type CategoryWithTranslations struct {
 
 type CategoryPatch struct {
 	Name *string `json:"name,omitempty" db:"name"`
-}
-
-func NewCategoryPatch(name string) *CategoryPatch {
-	return &CategoryPatch{
-		Name: &name,
-	}
 }

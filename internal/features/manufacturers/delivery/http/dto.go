@@ -11,5 +11,6 @@ type createDTO struct {
 }
 
 type patchDTO struct {
-	Name *string `json:"name,omitempty" validate:"omitempty"`
+	Translations *[]TranslationInput `json:"translations" db:"translations"`
+	CategoryIds  *[]int              `json:"category_ids" db:"category_ids"`
 }

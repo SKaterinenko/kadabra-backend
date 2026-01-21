@@ -29,6 +29,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("POST /products-by-category-ids", handler.GetByCategoryIds)
 	router.HandleFunc("POST /products-by-products-type-ids", handler.GetByProductsTypeIds)
 	router.HandleFunc("GET /products-by-category-slug/{slug}", handler.GetByCategorySlug)
+	router.HandleFunc("GET /products-by-manufacturer-id/{id}", handler.GetByManufacturerId)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -149,6 +150,21 @@ func (h *Handler) GetByCategorySlug(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 	lang := pkg.GetLang(r)
 	products, err := h.service.GetByCategorySlug(r.Context(), lang, slug)
+	if check.CheckErr(&w, err) {
+		return
+	}
+
+	res.Json(w, products, http.StatusOK)
+}
+
+func (h *Handler) GetByManufacturerId(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if check.CheckErr(&w, err) {
+		return
+	}
+	lang := pkg.GetLang(r)
+	products, err := h.service.GetByManufacturerId(r.Context(), id, lang)
 	if check.CheckErr(&w, err) {
 		return
 	}

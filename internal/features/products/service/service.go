@@ -95,3 +95,12 @@ func (s *Service) GetByCategorySlug(ctx context.Context, lang, slug string) ([]*
 
 	return products, nil
 }
+
+func (s *Service) GetByManufacturerId(ctx context.Context, id int, lang string) ([]*products_model.Product, error) {
+	products, err := s.repo.GetByManufacturerId(ctx, id, lang)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}

@@ -14,11 +14,12 @@ type ManufacturerTranslate struct {
 }
 
 type ManufacturerWithoutTranslations struct {
-	Id        int       `json:"id" db:"id"`
-	Name      string    `json:"name" db:"name"`
-	Slug      string    `json:"slug" db:"slug"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	Id          int       `json:"id" db:"id"`
+	CategoryIds []int     `json:"category_ids" db:"category_ids"`
+	Name        string    `json:"name" db:"name"`
+	Slug        string    `json:"slug" db:"slug"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type ManufacturerWithTranslations struct {
@@ -32,6 +33,7 @@ type ManufacturerWithTranslations struct {
 
 type Manufacturer struct {
 	Id          int       `json:"id" db:"id"`
+	CategoryIds []int     `json:"category_ids" db:"category_ids"`
 	Name        string    `json:"name" db:"name"`
 	Slug        string    `json:"slug" db:"slug"`
 	Description string    `json:"description" db:"description"`
@@ -39,12 +41,7 @@ type Manufacturer struct {
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
-type ManufacturerPatch struct {
-	Name *string `json:"name,omitempty"`
-}
-
-func NewManufacturerPatch(name string) *ManufacturerPatch {
-	return &ManufacturerPatch{
-		Name: &name,
-	}
+type ManufacturerTranslateForPatch struct {
+	Description  string `json:"description" db:"description"`
+	LanguageCode string `json:"language_code" db:"language_code"`
 }

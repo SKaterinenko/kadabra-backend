@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS product_type_translations(
     UNIQUE(product_type_id, language_code)
     );
 
--- Триггер для проверки уникальности
+-- Триггер для проверки уникальности. уникальное имя products_type у 1 sub_category
 CREATE OR REPLACE FUNCTION check_product_type_name_uniqueness()
 RETURNS TRIGGER AS $$
 BEGIN

@@ -99,9 +99,25 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 	if check.CheckErr(&w, err) {
 		return
 	}
-	input := &manufacturers_service.PatchInput{
-		Name: body.Name,
+
+	var translations *[]manufacturers_service.TranslationInput
+
+	if body.Translations != nil {
+		temp := make([]manufacturers_service.TranslationInput, len(*body.Translations))
+		for i, t := range *body.Translations {
+			temp[i] = manufacturers_service.TranslationInput{
+				LanguageCode: t.LanguageCode,
+				Description:  t.Description,
+			}
+		}
+		translations = &temp
 	}
+
+	input := &manufacturers_service.PatchInput{
+		CategoryIds:  body.CategoryIds,
+		Translations: translations,
+	}
+
 	manufacturer, err := h.service.Patch(r.Context(), id, input)
 	if check.CheckErr(&w, err) {
 		return

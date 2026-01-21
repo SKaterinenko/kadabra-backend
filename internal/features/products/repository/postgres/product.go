@@ -365,3 +365,39 @@ func (c *Product) GetByCategorySlug(ctx context.Context, lang, slug string) ([]*
 	}
 	return products, nil
 }
+
+func (c *Product) GetByManufacturerId(ctx context.Context, id int, lang string) ([]*products_model.Product, error) {
+	sql, args, err := config.Psql.Select(
+		"p.id",
+		"pt.name",
+		"pt.slug",
+		"p.product_type_id",
+		"p.manufacturer_id",
+		"pt.short_description",
+		"pt.description",
+		"p.created_at",
+		"p.updated_at",
+	).From("products p").
+		Join("product_translations pt on pt.product_id = p.id").
+		Where(sq.Eq{"pt.language_code": lang}).
+		Join("manufacturers m on m.id = p.manufacturer_id").
+		Where(sq.Eq{"m.id": id}).
+		Limit(30).
+		OrderBy("p.created_at ASC").
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := c.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+	defer rows.Close()
+	products, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[products_model.Product])
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
