@@ -8,12 +8,12 @@ import (
 
 type ProductsService interface {
 	Create(ctx context.Context, product *products_service.CreateInput) (*products_model.ProductWithTranslations, error)
-	GetAll(ctx context.Context, lang string) ([]*products_model.Product, error)
+	GetAll(ctx context.Context, lang string, categories, types, manufacturers []int) ([]*products_model.Product, error)
 	GetById(ctx context.Context, id int, lang string) (*products_model.Product, error)
 	Delete(ctx context.Context, id int) error
 	Patch(ctx context.Context, id int, update *products_service.PatchInput) (*products_model.Product, error)
 	GetByCategoryIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error)
 	GetByProductsTypeIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error)
 	GetByCategorySlug(ctx context.Context, lang, slug string) ([]*products_model.Product, error)
-	GetByManufacturerId(ctx context.Context, id int, lang string) ([]*products_model.Product, error)
+	GetByManufacturersIds(ctx context.Context, ids []int, lang string) ([]*products_model.Product, error)
 }

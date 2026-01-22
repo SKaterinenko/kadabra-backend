@@ -25,6 +25,7 @@ type ManufacturerWithoutTranslations struct {
 type ManufacturerWithTranslations struct {
 	Id           int                      `json:"id" db:"id"`
 	Name         string                   `json:"name" db:"name"`
+	CategoryIds  []int                    `json:"category_ids" db:"category_ids"`
 	Slug         string                   `json:"slug" db:"slug"`
 	Translations []*ManufacturerTranslate `json:"translations" db:"translations"`
 	CreatedAt    time.Time                `json:"created_at" db:"created_at"`

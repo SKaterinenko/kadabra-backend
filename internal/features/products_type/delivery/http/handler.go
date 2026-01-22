@@ -2,10 +2,10 @@ package products_type_http
 
 import (
 	products_type_service "kadabra/internal/features/products_type/service"
-	"kadabra/pkg/check"
 	pkg "kadabra/pkg/lang"
 	"kadabra/pkg/req"
 	"kadabra/pkg/res"
+	"kadabra/pkg/utils"
 	"net/http"
 	"strconv"
 )
@@ -48,7 +48,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		SubCategoryId: body.SubCategoryId,
 	}
 	newProductsType, err := h.service.Create(r.Context(), input)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, newProductsType, http.StatusOK)
@@ -57,7 +57,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	lang := pkg.GetLang(r)
 	productsType, err := h.service.GetAll(r.Context(), lang)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, productsType, http.StatusOK)
@@ -66,12 +66,12 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	lang := pkg.GetLang(r)
 	productsType, err := h.service.GetById(r.Context(), id, lang)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, productsType, http.StatusOK)
@@ -80,11 +80,11 @@ func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	err = h.service.Delete(r.Context(), id)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful"}, http.StatusOK)
@@ -97,14 +97,14 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	input := &products_type_service.PatchInput{
 		Name: body.Name,
 	}
 	productsType, err := h.service.Patch(r.Context(), id, input)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, productsType, http.StatusOK)
@@ -114,7 +114,7 @@ func (h *Handler) GetProductsTypeByCategorySlug(w http.ResponseWriter, r *http.R
 	slug := r.PathValue("slug")
 	lang := pkg.GetLang(r)
 	productsType, err := h.service.GetProductsTypeByCategorySlug(r.Context(), slug, lang)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, productsType, http.StatusOK)

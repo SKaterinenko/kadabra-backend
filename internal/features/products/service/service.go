@@ -22,8 +22,8 @@ func (s *Service) Create(ctx context.Context, product *CreateInput) (*products_m
 	return out, nil
 }
 
-func (s *Service) GetAll(ctx context.Context, lang string) ([]*products_model.Product, error) {
-	out, err := s.repo.GetAll(ctx, lang)
+func (s *Service) GetAll(ctx context.Context, lang string, categories, types, manufacturers []int) ([]*products_model.Product, error) {
+	out, err := s.repo.GetAll(ctx, lang, categories, types, manufacturers)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +96,8 @@ func (s *Service) GetByCategorySlug(ctx context.Context, lang, slug string) ([]*
 	return products, nil
 }
 
-func (s *Service) GetByManufacturerId(ctx context.Context, id int, lang string) ([]*products_model.Product, error) {
-	products, err := s.repo.GetByManufacturerId(ctx, id, lang)
+func (s *Service) GetByManufacturersIds(ctx context.Context, ids []int, lang string) ([]*products_model.Product, error) {
+	products, err := s.repo.GetByManufacturersIds(ctx, ids, lang)
 	if err != nil {
 		return nil, err
 	}

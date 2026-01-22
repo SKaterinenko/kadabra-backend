@@ -1,4 +1,4 @@
-package check
+package utils
 
 import (
 	"kadabra/pkg/res"

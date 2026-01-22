@@ -8,6 +8,7 @@ type TranslationInput struct {
 type CreateInput struct {
 	Name         string             `json:"name"`
 	Translations []TranslationInput `json:"translations"`
+	CategoryIds  []int              `json:"category_ids" db:"category_ids"`
 }
 
 type PatchInput struct {

@@ -8,6 +8,7 @@ type TranslationInput struct {
 type createDTO struct {
 	Name         string             `json:"name" validate:"required"`
 	Translations []TranslationInput `json:"translations" validate:"required,min=1,dive"`
+	CategoryIds  []int              `json:"category_ids" validate:"required,min=1,dive,required"`
 }
 
 type patchDTO struct {

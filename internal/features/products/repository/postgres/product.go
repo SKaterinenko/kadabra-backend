@@ -121,15 +121,47 @@ func (c *Product) Create(ctx context.Context, req *products_service.CreateInput)
 	return product, nil
 }
 
-func (c *Product) GetAll(ctx context.Context, lang string) ([]*products_model.Product, error) {
-	query, args, err := config.Psql.
-		Select("p.id", "pt.name", "pt.slug", "p.product_type_id", "p.manufacturer_id", "pt.short_description", "pt.description", "p.created_at", "p.updated_at").
+func (c *Product) GetAll(
+	ctx context.Context,
+	lang string,
+	categories, types, manufacturers []int,
+) ([]*products_model.Product, error) {
+
+	q := config.Psql.
+		Select(
+			"p.id",
+			"pt.name",
+			"pt.slug",
+			"p.product_type_id",
+			"p.manufacturer_id",
+			"pt.short_description",
+			"pt.description",
+			"p.created_at",
+			"p.updated_at",
+		).
 		From("products p").
-		Join("product_translations pt on p.id = pt.product_id").
+		Join("product_translations pt ON p.id = pt.product_id").
+		Join("products_type t ON p.product_type_id = t.id").
 		Where(sq.Eq{"pt.language_code": lang}).
 		Limit(30).
-		OrderBy("pt.name ASC").
-		ToSql()
+		OrderBy("pt.name ASC")
+
+	if len(types) > 0 {
+		q = q.Where(sq.Eq{"p.product_type_id": types})
+	}
+
+	if len(manufacturers) > 0 {
+		q = q.Where(sq.Eq{"p.manufacturer_id": manufacturers})
+	}
+
+	if len(categories) > 0 {
+		q = q.
+			Join("sub_categories sc ON t.sub_category_id = sc.id").
+			Join("categories c ON sc.category_id = c.id").
+			Where(sq.Eq{"c.id": categories})
+	}
+
+	query, args, err := q.ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)
 	}
@@ -140,7 +172,10 @@ func (c *Product) GetAll(ctx context.Context, lang string) ([]*products_model.Pr
 	}
 	defer rows.Close()
 
-	products, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[products_model.Product])
+	products, err := pgx.CollectRows(
+		rows,
+		pgx.RowToAddrOfStructByName[products_model.Product],
+	)
 	if err != nil {
 		return nil, core.ScanError(err)
 	}
@@ -366,7 +401,7 @@ func (c *Product) GetByCategorySlug(ctx context.Context, lang, slug string) ([]*
 	return products, nil
 }
 
-func (c *Product) GetByManufacturerId(ctx context.Context, id int, lang string) ([]*products_model.Product, error) {
+func (c *Product) GetByManufacturersIds(ctx context.Context, ids []int, lang string) ([]*products_model.Product, error) {
 	sql, args, err := config.Psql.Select(
 		"p.id",
 		"pt.name",
@@ -381,7 +416,7 @@ func (c *Product) GetByManufacturerId(ctx context.Context, id int, lang string) 
 		Join("product_translations pt on pt.product_id = p.id").
 		Where(sq.Eq{"pt.language_code": lang}).
 		Join("manufacturers m on m.id = p.manufacturer_id").
-		Where(sq.Eq{"m.id": id}).
+		Where(sq.Eq{"m.id": ids}).
 		Limit(30).
 		OrderBy("p.created_at ASC").
 		ToSql()

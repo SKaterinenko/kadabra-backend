@@ -30,11 +30,12 @@ func (m *Manufacturer) Create(ctx context.Context, req *manufacturers_service.Cr
 	}
 	defer tx.Rollback(ctx)
 	slugText := slug.Make(req.Name)
+
 	query, args, err := config.Psql.
 		Insert("manufacturers").
-		Columns("name", "slug").
-		Values(req.Name, slugText).
-		Suffix("RETURNING id, name, slug, created_at, updated_at").
+		Columns("name", "slug", "category_ids").
+		Values(req.Name, slugText, req.CategoryIds).
+		Suffix("RETURNING id, name, slug, category_ids, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
@@ -54,6 +55,7 @@ func (m *Manufacturer) Create(ctx context.Context, req *manufacturers_service.Cr
 
 	manufacturer := &manufacturers_model.ManufacturerWithTranslations{
 		Id:           manufacturerWT.Id,
+		CategoryIds:  manufacturerWT.CategoryIds,
 		Name:         manufacturerWT.Name,
 		Slug:         slugText,
 		Translations: make([]*manufacturers_model.ManufacturerTranslate, 0),
@@ -181,7 +183,6 @@ func (m *Manufacturer) Patch(ctx context.Context, id int, update *manufacturers_
 	hasUpdates := false
 	var translations []*manufacturers_model.ManufacturerTranslate
 
-	// Обновляем переводы
 	if update.Translations != nil {
 		for _, v := range *update.Translations {
 			query, args, err := config.Psql.
@@ -210,7 +211,6 @@ func (m *Manufacturer) Patch(ctx context.Context, id int, update *manufacturers_
 		}
 	}
 
-	// Обновляем производителя
 	q := config.Psql.
 		Update("manufacturers").
 		Where(sq.Eq{"id": id})
@@ -241,7 +241,6 @@ func (m *Manufacturer) Patch(ctx context.Context, id int, update *manufacturers_
 			return nil, err
 		}
 	} else {
-		// Если обновляли только переводы, получаем текущие данные производителя
 		query, args, err := config.Psql.
 			Select("id, name, slug, category_ids, created_at, updated_at").
 			From("manufacturers").
@@ -282,4 +281,34 @@ func (m *Manufacturer) Patch(ctx context.Context, id int, update *manufacturers_
 	}
 
 	return manufacturer, nil
+}
+
+func (m *Manufacturer) GetByCategorySlug(ctx context.Context, slug, lang string) ([]*manufacturers_model.Manufacturer, error) {
+	sql, args, err := config.Psql.
+		Select("m.id", "m.category_ids", "m.name", "m.slug", "m.created_at", "m.updated_at", "mt.description").
+		From("manufacturers m").
+		Join("manufacturer_translations mt ON mt.manufacturer_id = m.id").
+		Where(sq.Eq{"mt.language_code": lang}).
+		Join("category_translations ct ON ct.slug = ?", slug).
+		Where("m.category_ids @> ARRAY[ct.category_id]").
+		Limit(30).
+		OrderBy("m.name ASC").
+		ToSql()
+
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+
+	rows, err := m.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	manufacturers, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[manufacturers_model.Manufacturer])
+	if err != nil {
+		return nil, err
+	}
+
+	return manufacturers, nil
 }

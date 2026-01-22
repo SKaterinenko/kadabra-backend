@@ -53,3 +53,12 @@ func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*manuf
 	}
 	return out, nil
 }
+
+func (s *Service) GetByCategorySlug(ctx context.Context, slug, lang string) ([]*manufacturers_model.Manufacturer, error) {
+	out, err := s.repo.GetByCategorySlug(ctx, slug, lang)
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}

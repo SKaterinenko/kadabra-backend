@@ -2,10 +2,10 @@ package sub_categories_http
 
 import (
 	sub_categories_service "kadabra/internal/features/sub_categories/service"
-	"kadabra/pkg/check"
 	pkg "kadabra/pkg/lang"
 	"kadabra/pkg/req"
 	"kadabra/pkg/res"
+	"kadabra/pkg/utils"
 	"net/http"
 	"strconv"
 )
@@ -38,7 +38,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		CategoryId:   body.CategoryId,
 	}
 	newCategory, err := h.service.Create(r.Context(), input)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, newCategory, http.StatusOK)
@@ -47,7 +47,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	lang := pkg.GetLang(r)
 	categories, err := h.service.GetAll(r.Context(), lang)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, categories, http.StatusOK)
@@ -57,11 +57,11 @@ func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	lang := pkg.GetLang(r)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	category, err := h.service.GetById(r.Context(), id, lang)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, category, http.StatusOK)
@@ -70,11 +70,11 @@ func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	err = h.service.Delete(r.Context(), id)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful"}, http.StatusOK)
@@ -87,14 +87,14 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	input := &sub_categories_service.PatchInput{
 		Name: body.Name,
 	}
 	category, err := h.service.Patch(r.Context(), id, input)
-	if check.CheckErr(&w, err) {
+	if utils.CheckErr(&w, err) {
 		return
 	}
 	res.Json(w, category, http.StatusOK)

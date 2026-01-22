@@ -12,4 +12,5 @@ type ManufacturerService interface {
 	GetById(ctx context.Context, id int, lang string) (*manufacturers_model.Manufacturer, error)
 	Delete(ctx context.Context, id int) error
 	Patch(ctx context.Context, id int, update *manufacturers_service.PatchInput) (*manufacturers_model.ManufacturerWithTranslations, error)
+	GetByCategorySlug(ctx context.Context, slug, lang string) ([]*manufacturers_model.Manufacturer, error)
 }
