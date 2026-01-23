@@ -78,8 +78,13 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limit, offset, err := utils.GetLimitOffset(q)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
 	lang := pkg.GetLang(r)
-	products, err := h.service.GetAll(r.Context(), lang, categories, types, manufacturers)
+	products, err := h.service.GetAll(r.Context(), lang, categories, types, manufacturers, limit, offset)
 	if utils.CheckErr(&w, err) {
 		return
 	}

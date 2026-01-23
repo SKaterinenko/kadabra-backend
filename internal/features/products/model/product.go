@@ -53,6 +53,11 @@ type ProductPatch struct {
 	ManufacturerId   *int    `json:"manufacturer_id,omitempty"`
 }
 
+type Products struct {
+	Data       []*Product `json:"data" db:"data"`
+	TotalCount int        `json:"total_count" db:"total_count"`
+}
+
 func NewProductPatch(name, description, shortDescription string, productTypeId, manufacturerId int) *ProductPatch {
 	return &ProductPatch{
 		Name:             &name,

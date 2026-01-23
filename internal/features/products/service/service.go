@@ -22,8 +22,11 @@ func (s *Service) Create(ctx context.Context, product *CreateInput) (*products_m
 	return out, nil
 }
 
-func (s *Service) GetAll(ctx context.Context, lang string, categories, types, manufacturers []int) ([]*products_model.Product, error) {
-	out, err := s.repo.GetAll(ctx, lang, categories, types, manufacturers)
+func (s *Service) GetAll(ctx context.Context, lang string, categories, types, manufacturers []int, limit, offset int) (*products_model.Products, error) {
+	if limit == 0 {
+		limit = 30
+	}
+	out, err := s.repo.GetAll(ctx, lang, categories, types, manufacturers, limit, offset)
 	if err != nil {
 		return nil, err
 	}

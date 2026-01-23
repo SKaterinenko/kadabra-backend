@@ -125,10 +125,37 @@ func (c *Product) GetAll(
 	ctx context.Context,
 	lang string,
 	categories, types, manufacturers []int,
-) ([]*products_model.Product, error) {
+	limit, offset int,
+) (*products_model.Products, error) {
 
-	q := config.Psql.
-		Select(
+	// Функция для применения общих условий
+	applyFilters := func(q sq.SelectBuilder) sq.SelectBuilder {
+		q = q.
+			From("products p").
+			Join("product_translations pt ON p.id = pt.product_id").
+			Join("products_type t ON p.product_type_id = t.id").
+			Where(sq.Eq{"pt.language_code": lang})
+
+		if len(types) > 0 {
+			q = q.Where(sq.Eq{"p.product_type_id": types})
+		}
+
+		if len(manufacturers) > 0 {
+			q = q.Where(sq.Eq{"p.manufacturer_id": manufacturers})
+		}
+
+		if len(categories) > 0 {
+			q = q.
+				Join("sub_categories sc ON t.sub_category_id = sc.id").
+				Join("categories c ON sc.category_id = c.id").
+				Where(sq.Eq{"c.id": categories})
+		}
+
+		return q
+	}
+
+	dataQuery := applyFilters(
+		config.Psql.Select(
 			"p.id",
 			"pt.name",
 			"pt.slug",
@@ -138,30 +165,12 @@ func (c *Product) GetAll(
 			"pt.description",
 			"p.created_at",
 			"p.updated_at",
-		).
-		From("products p").
-		Join("product_translations pt ON p.id = pt.product_id").
-		Join("products_type t ON p.product_type_id = t.id").
-		Where(sq.Eq{"pt.language_code": lang}).
-		Limit(30).
+		)).
+		Limit(uint64(limit)).
+		Offset(uint64(offset)).
 		OrderBy("pt.name ASC")
 
-	if len(types) > 0 {
-		q = q.Where(sq.Eq{"p.product_type_id": types})
-	}
-
-	if len(manufacturers) > 0 {
-		q = q.Where(sq.Eq{"p.manufacturer_id": manufacturers})
-	}
-
-	if len(categories) > 0 {
-		q = q.
-			Join("sub_categories sc ON t.sub_category_id = sc.id").
-			Join("categories c ON sc.category_id = c.id").
-			Where(sq.Eq{"c.id": categories})
-	}
-
-	query, args, err := q.ToSql()
+	query, args, err := dataQuery.ToSql()
 	if err != nil {
 		return nil, core.BuildSQLError(err)
 	}
@@ -172,7 +181,7 @@ func (c *Product) GetAll(
 	}
 	defer rows.Close()
 
-	products, err := pgx.CollectRows(
+	productList, err := pgx.CollectRows(
 		rows,
 		pgx.RowToAddrOfStructByName[products_model.Product],
 	)
@@ -180,7 +189,24 @@ func (c *Product) GetAll(
 		return nil, core.ScanError(err)
 	}
 
-	return products, nil
+	// Запрос для подсчета общего количества
+	countQuery := applyFilters(config.Psql.Select("COUNT(*)"))
+
+	countSQL, countArgs, err := countQuery.ToSql()
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+
+	var totalCount int
+	err = c.db.QueryRow(ctx, countSQL, countArgs...).Scan(&totalCount)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+
+	return &products_model.Products{
+		Data:       productList,
+		TotalCount: totalCount,
+	}, nil
 }
 
 func (c *Product) GetById(ctx context.Context, id int, lang string) (*products_model.Product, error) {
