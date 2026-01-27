@@ -30,6 +30,8 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("POST /products-by-products-type-ids", handler.GetByProductsTypeIds)
 	router.HandleFunc("GET /products-by-category-slug/{slug}", handler.GetByCategorySlug)
 	router.HandleFunc("GET /products-by-manufacturer-id/{id}", handler.GetByManufacturersIds)
+	router.HandleFunc("GET /product/{slug}", handler.GetProductBySlug)
+	router.HandleFunc("POST /product-variations", handler.CreateProductVariations)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -191,4 +193,54 @@ func (h *Handler) GetByManufacturersIds(w http.ResponseWriter, r *http.Request) 
 	}
 
 	res.Json(w, products, http.StatusOK)
+}
+
+func (h *Handler) GetProductBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	lang := pkg.GetLang(r)
+	product, err := h.service.GetBySlug(r.Context(), slug, lang)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	res.Json(w, product, http.StatusOK)
+}
+
+func (h *Handler) CreateProductVariations(w http.ResponseWriter, r *http.Request) {
+	formData, err := req.ParseMultipartForm(r, 10<<20) // 10MB max
+	if err != nil {
+		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	productId, err := req.GetIntFromForm(formData, "product_id")
+	if err != nil {
+		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	price, err := req.GetIntFromForm(formData, "price")
+	if err != nil {
+		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	imageFile, exists := formData.Files["image"]
+	if !exists {
+		res.Json(w, res.ResDTO{Message: "image file is required", Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	variation := &products_service.VariationInput{
+		ProductId: productId,
+		Image:     imageFile,
+		Price:     price,
+	}
+
+	product, err := h.service.CreateProductVariations(r.Context(), variation)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	res.Json(w, product, http.StatusOK)
 }

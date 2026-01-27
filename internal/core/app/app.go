@@ -44,6 +44,12 @@ func App() (context.Context, *http.ServeMux, *config.Config, func()) {
 		log.Fatal("db error: ", err)
 	}
 
+	// S3
+	s3Client, err := config.NewS3Client(cfg)
+	if err != nil {
+		log.Fatal("s3 error: ", err)
+	}
+
 	// Repository
 	categoryRepository := categories_postgres.NewCategoryPostgres(postgresDB)
 	subCategoryRepository := sub_categories_postgres.NewSubCategoryPostgres(postgresDB)
@@ -56,7 +62,7 @@ func App() (context.Context, *http.ServeMux, *config.Config, func()) {
 	subCategory := sub_categories_service.NewService(subCategoryRepository)
 	manufacturer := manufacturers_service.NewService(manufacturerRepository)
 	productsType := products_type_service.NewService(productsTypeRepository)
-	products := products_service.NewService(productsRepository)
+	products := products_service.NewService(productsRepository, s3Client)
 
 	// Handlers
 	categories_http.NewHandler(router, &categories_http.HandlerDeps{

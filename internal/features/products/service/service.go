@@ -2,15 +2,18 @@ package products_service
 
 import (
 	"context"
+	"kadabra/internal/core/config"
 	products_model "kadabra/internal/features/products/model"
+	"strings"
 )
 
 type Service struct {
-	repo ProductRepository
+	repo     ProductRepository
+	s3Client *config.S3Client
 }
 
-func NewService(repo ProductRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo ProductRepository, s3Client *config.S3Client) *Service {
+	return &Service{repo: repo, s3Client: s3Client}
 }
 
 func (s *Service) Create(ctx context.Context, product *CreateInput) (*products_model.ProductWithTranslations, error) {
@@ -24,7 +27,7 @@ func (s *Service) Create(ctx context.Context, product *CreateInput) (*products_m
 
 func (s *Service) GetAll(ctx context.Context, lang string, categories, types, manufacturers []int, limit, offset int) (*products_model.Products, error) {
 	if limit == 0 {
-		limit = 30
+		limit = 20
 	}
 	out, err := s.repo.GetAll(ctx, lang, categories, types, manufacturers, limit, offset)
 	if err != nil {
@@ -106,4 +109,34 @@ func (s *Service) GetByManufacturersIds(ctx context.Context, ids []int, lang str
 	}
 
 	return products, nil
+}
+
+func (s *Service) GetBySlug(ctx context.Context, slug, lang string) (*products_model.ProductWithParents, error) {
+	newSlug := strings.ToUpper(slug[:1]) + slug[1:]
+	product, err := s.repo.GetBySlug(ctx, newSlug, lang)
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
+}
+
+func (s *Service) CreateProductVariations(ctx context.Context, input *VariationInput) (*products_model.ProductVariation, error) {
+	imageURL, err := s.s3Client.UploadFile(ctx, input.Image)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &VariationReq{
+		ProductId: input.ProductId,
+		Image:     imageURL,
+		Price:     input.Price,
+	}
+
+	variation, err := s.repo.CreateProductVariations(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return variation, nil
 }

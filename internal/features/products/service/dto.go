@@ -1,5 +1,7 @@
 package products_service
 
+import "mime/multipart"
+
 type TranslationInput struct {
 	LanguageCode     string `json:"language_code"`
 	Name             string `json:"name"`
@@ -19,4 +21,16 @@ type PatchInput struct {
 	ShortDescription *string
 	ProductTypeId    *int
 	ManufacturerId   *int
+}
+
+type VariationInput struct {
+	ProductId int                   `json:"product_id"`
+	Image     *multipart.FileHeader `json:"image"`
+	Price     int                   `json:"price"`
+}
+
+type VariationReq struct {
+	ProductId int    `json:"product_id" db:"product_id"`
+	Image     string `json:"image" db:"image"`
+	Price     int    `json:"price" db:"price"`
 }

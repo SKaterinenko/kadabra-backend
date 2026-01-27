@@ -1,5 +1,7 @@
 package products_http
 
+import "mime/multipart"
+
 type TranslationInput struct {
 	LanguageCode     string `json:"language_code" validate:"required"`
 	Name             string `json:"name" validate:"required"`
@@ -23,4 +25,10 @@ type patchDTO struct {
 
 type getByIdsDTO struct {
 	Ids []int `json:"ids" validate:"required"`
+}
+
+type createVariationDTO struct {
+	ProductId int                   `form:"product_id" validate:"required,gt=0"`
+	Image     *multipart.FileHeader `form:"image" validate:"required,image_type"`
+	Price     int                   `form:"price" validate:"required,gte=0"`
 }

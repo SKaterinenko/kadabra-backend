@@ -67,3 +67,35 @@ func NewProductPatch(name, description, shortDescription string, productTypeId, 
 		ManufacturerId:   &manufacturerId,
 	}
 }
+
+type ProductWithParents struct {
+	Product
+	ProductType ProductType `json:"product_type"`
+}
+
+type ProductType struct {
+	Id          int         `json:"id" db:"product_type_id"`
+	Name        string      `json:"name" db:"product_type_name"`
+	SubCategory SubCategory `json:"sub_category"`
+}
+
+type SubCategory struct {
+	Id       int      `json:"id" db:"sub_category_id"`
+	Name     string   `json:"name" db:"sub_category_name"`
+	Category Category `json:"category"`
+}
+
+type Category struct {
+	Id   int    `json:"id" db:"category_id"`
+	Name string `json:"name" db:"category_name"`
+	Slug string `json:"slug" db:"category_slug"`
+}
+
+type ProductVariation struct {
+	Id        int       `json:"id" db:"id"`
+	ProductId int       `json:"product_id" db:"product_id"`
+	Image     string    `json:"image" db:"image"`
+	Price     int       `json:"price" db:"price"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}

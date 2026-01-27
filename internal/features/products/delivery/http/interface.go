@@ -16,4 +16,6 @@ type ProductsService interface {
 	GetByProductsTypeIds(ctx context.Context, categoryIds []int, lang string) ([]*products_model.Product, error)
 	GetByCategorySlug(ctx context.Context, lang, slug string) ([]*products_model.Product, error)
 	GetByManufacturersIds(ctx context.Context, ids []int, lang string) ([]*products_model.Product, error)
+	GetBySlug(ctx context.Context, slug, lang string) (*products_model.ProductWithParents, error)
+	CreateProductVariations(ctx context.Context, req *products_service.VariationInput) (*products_model.ProductVariation, error)
 }

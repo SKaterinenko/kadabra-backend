@@ -5,6 +5,7 @@ import (
 	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/gosimple/slug"
+	"time"
 
 	"kadabra/internal/core"
 	"kadabra/internal/core/config"
@@ -461,4 +462,134 @@ func (c *Product) GetByManufacturersIds(ctx context.Context, ids []int, lang str
 	}
 
 	return products, nil
+}
+
+func (c *Product) GetBySlug(ctx context.Context, slug, lang string) (*products_model.ProductWithParents, error) {
+	sql, args, err := config.Psql.Select(
+		// Product fields
+		"p.id",
+		"pt.name AS name",
+		"pt.slug AS slug",
+		"p.product_type_id",
+		"p.manufacturer_id",
+		"pt.short_description AS short_description",
+		"pt.description AS description",
+		"p.created_at",
+		"p.updated_at",
+
+		// ProductType fields
+		"ptt.name AS product_type_name",
+
+		// SubCategory fields
+		"sc.id AS sub_category_id",
+		"sct.name AS sub_category_name",
+
+		// Category fields
+		"c.id AS category_id",
+		"ct.name AS category_name",
+		"ct.slug AS category_slug",
+	).From("products p").
+		Join("product_translations pt ON pt.product_id = p.id").
+		Join("products_type pty ON pty.id = p.product_type_id").
+		Join("product_type_translations ptt ON ptt.product_type_id = pty.id AND ptt.language_code = ?", lang).
+		Join("sub_categories sc ON sc.id = pty.sub_category_id").
+		Join("sub_category_translations sct ON sct.sub_category_id = sc.id AND sct.language_code = ?", lang).
+		Join("categories c ON c.id = sc.category_id").
+		Join("category_translations ct ON ct.category_id = c.id AND ct.language_code = ?", lang).
+		Where(sq.Eq{"pt.language_code": lang, "pt.slug": slug}).
+		ToSql()
+
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+
+	rows, err := c.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+	defer rows.Close()
+
+	type FlatResult struct {
+		// Product
+		Id               int       `db:"id"`
+		Name             string    `db:"name"`
+		Slug             string    `db:"slug"`
+		ProductTypeId    int       `db:"product_type_id"`
+		ManufacturerId   int       `db:"manufacturer_id"`
+		ShortDescription string    `db:"short_description"`
+		Description      string    `db:"description"`
+		CreatedAt        time.Time `db:"created_at"`
+		UpdatedAt        time.Time `db:"updated_at"`
+
+		// ProductType
+		PTName string `db:"product_type_name"`
+
+		// SubCategory
+		SCId   int    `db:"sub_category_id"`
+		SCName string `db:"sub_category_name"`
+
+		// Category
+		CatId   int    `db:"category_id"`
+		CatName string `db:"category_name"`
+		CatSlug string `db:"category_slug"`
+	}
+
+	flat, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[FlatResult])
+	if err != nil {
+		return nil, err
+	}
+
+	// Собираем вложенную структуру
+	result := &products_model.ProductWithParents{
+		Product: products_model.Product{
+			Id:               flat.Id,
+			Name:             flat.Name,
+			Slug:             flat.Slug,
+			ProductTypeId:    flat.ProductTypeId,
+			ManufacturerId:   flat.ManufacturerId,
+			ShortDescription: flat.ShortDescription,
+			Description:      flat.Description,
+			CreatedAt:        flat.CreatedAt,
+			UpdatedAt:        flat.UpdatedAt,
+		},
+		ProductType: products_model.ProductType{
+			Id:   flat.ProductTypeId,
+			Name: flat.PTName,
+			SubCategory: products_model.SubCategory{
+				Id:   flat.SCId,
+				Name: flat.SCName,
+				Category: products_model.Category{
+					Id:   flat.CatId,
+					Name: flat.CatName,
+					Slug: flat.CatSlug,
+				},
+			},
+		},
+	}
+
+	return result, nil
+}
+
+func (c *Product) CreateProductVariations(ctx context.Context, req *products_service.VariationReq) (*products_model.ProductVariation, error) {
+	sql, args, err := config.Psql.Insert("product_variations").
+		Columns("product_id", "image", "price").
+		Values(req.ProductId, req.Image, req.Price).
+		Suffix("RETURNING id, product_id, image, price, created_at, updated_at").
+		ToSql()
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+
+	rows, err := c.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+	defer rows.Close()
+
+	variation, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[products_model.ProductVariation])
+	if err != nil {
+		return nil, core.RowsError(err)
+	}
+
+	return variation, nil
 }

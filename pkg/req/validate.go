@@ -4,11 +4,58 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"mime/multipart"
 	"strings"
+	"sync"
 )
 
+var (
+	validate *validator.Validate
+	once     sync.Once
+)
+
+// Инициализация валидатора с кастомными правилами (вызывается один раз)
+func initValidator() {
+	once.Do(func() {
+		validate = validator.New()
+
+		// Регистрируем кастомные валидаторы
+		err := validate.RegisterValidation("image_type", validateImageType)
+		if err != nil {
+			return
+		}
+		// Можно добавить другие кастомные валидаторы здесь
+	})
+}
+
+// Валидатор для проверки типа изображения
+func validateImageType(fl validator.FieldLevel) bool {
+	file, ok := fl.Field().Interface().(*multipart.FileHeader)
+	if !ok || file == nil {
+		return false
+	}
+
+	// Проверка Content-Type
+	contentType := file.Header.Get("Content-Type")
+	allowedTypes := []string{"image/png", "image/jpeg", "image/jpg"}
+
+	for _, t := range allowedTypes {
+		if contentType == t {
+			return true
+		}
+	}
+
+	// Дополнительная проверка расширения файла
+	filename := strings.ToLower(file.Filename)
+	return strings.HasSuffix(filename, ".png") ||
+		strings.HasSuffix(filename, ".jpg") ||
+		strings.HasSuffix(filename, ".jpeg")
+}
+
 func IsValid[T any](payload T) error {
-	validate := validator.New()
+	// Инициализируем валидатор (произойдет только один раз)
+	initValidator()
+
 	err := validate.Struct(payload)
 
 	if err != nil {
@@ -39,6 +86,8 @@ func IsValid[T any](payload T) error {
 				message = fmt.Sprintf("Field %s must be less than %s", fieldName, firstError.Param())
 			case "oneof":
 				message = fmt.Sprintf("Field %s must be one of [%s]", fieldName, firstError.Param())
+			case "image_type":
+				message = fmt.Sprintf("Field %s must be a PNG or JPEG image", fieldName)
 			default:
 				message = fmt.Sprintf("Field %s validation failed on %s", fieldName, firstError.Tag())
 			}
