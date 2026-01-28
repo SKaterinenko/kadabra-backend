@@ -32,6 +32,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("GET /products-by-manufacturer-id/{id}", handler.GetByManufacturersIds)
 	router.HandleFunc("GET /product/{slug}", handler.GetProductBySlug)
 	router.HandleFunc("POST /product-variations", handler.CreateProductVariations)
+	router.HandleFunc("DELETE /product-variations/{id}", handler.DeleteProductVariations)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -243,4 +244,17 @@ func (h *Handler) CreateProductVariations(w http.ResponseWriter, r *http.Request
 	}
 
 	res.Json(w, product, http.StatusOK)
+}
+
+func (h *Handler) DeleteProductVariations(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+	err = h.service.DeleteProductVariation(r.Context(), id)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful"}, http.StatusOK)
 }

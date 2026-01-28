@@ -140,3 +140,11 @@ func (s *Service) CreateProductVariations(ctx context.Context, input *VariationI
 
 	return variation, nil
 }
+
+func (s *Service) DeleteProductVariation(ctx context.Context, id int) error {
+	err := s.repo.DeleteProductVariation(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

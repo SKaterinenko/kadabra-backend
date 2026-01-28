@@ -182,12 +182,45 @@ func (c *Product) GetAll(
 	}
 	defer rows.Close()
 
-	productList, err := pgx.CollectRows(
-		rows,
-		pgx.RowToAddrOfStructByName[products_model.Product],
-	)
-	if err != nil {
-		return nil, core.ScanError(err)
+	var products []*products_model.Product
+
+	for rows.Next() {
+		var emptyProduct products_model.Product
+		rows.Scan(
+			&emptyProduct.Id,
+			&emptyProduct.Name,
+			&emptyProduct.Slug,
+			&emptyProduct.ProductTypeId,
+			&emptyProduct.ManufacturerId,
+			&emptyProduct.ShortDescription,
+			&emptyProduct.Description,
+			&emptyProduct.CreatedAt,
+			&emptyProduct.UpdatedAt,
+		)
+
+		sql, args, err := config.Psql.
+			Select("id", "product_id", "image", "price", "created_at", "updated_at").
+			From("product_variations").
+			Where(sq.Eq{"product_id": emptyProduct.Id}).
+			ToSql()
+		if err != nil {
+			return nil, core.BuildSQLError(err)
+		}
+
+		rows, err := c.db.Query(ctx, sql, args...)
+		if err != nil {
+			return nil, core.QueryError(err)
+		}
+		defer rows.Close()
+
+		variations, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[products_model.ProductVariation])
+		if err != nil {
+			return nil, core.RowsError(err)
+		}
+
+		emptyProduct.Variations = variations
+
+		products = append(products, &emptyProduct)
 	}
 
 	// Запрос для подсчета общего количества
@@ -205,7 +238,7 @@ func (c *Product) GetAll(
 	}
 
 	return &products_model.Products{
-		Data:       productList,
+		Data:       products,
 		TotalCount: totalCount,
 	}, nil
 }
@@ -488,6 +521,10 @@ func (c *Product) GetBySlug(ctx context.Context, slug, lang string) (*products_m
 		"c.id AS category_id",
 		"ct.name AS category_name",
 		"ct.slug AS category_slug",
+
+		//Manufacturer
+		"m.name AS manufacturer_name",
+		"m.slug AS manufacturer_slug",
 	).From("products p").
 		Join("product_translations pt ON pt.product_id = p.id").
 		Join("products_type pty ON pty.id = p.product_type_id").
@@ -496,6 +533,7 @@ func (c *Product) GetBySlug(ctx context.Context, slug, lang string) (*products_m
 		Join("sub_category_translations sct ON sct.sub_category_id = sc.id AND sct.language_code = ?", lang).
 		Join("categories c ON c.id = sc.category_id").
 		Join("category_translations ct ON ct.category_id = c.id AND ct.language_code = ?", lang).
+		Join("manufacturers m ON m.id = p.manufacturer_id").
 		Where(sq.Eq{"pt.language_code": lang, "pt.slug": slug}).
 		ToSql()
 
@@ -511,15 +549,16 @@ func (c *Product) GetBySlug(ctx context.Context, slug, lang string) (*products_m
 
 	type FlatResult struct {
 		// Product
-		Id               int       `db:"id"`
-		Name             string    `db:"name"`
-		Slug             string    `db:"slug"`
-		ProductTypeId    int       `db:"product_type_id"`
-		ManufacturerId   int       `db:"manufacturer_id"`
-		ShortDescription string    `db:"short_description"`
-		Description      string    `db:"description"`
-		CreatedAt        time.Time `db:"created_at"`
-		UpdatedAt        time.Time `db:"updated_at"`
+		Id               int                                `db:"id"`
+		Name             string                             `db:"name"`
+		Slug             string                             `db:"slug"`
+		ProductTypeId    int                                `db:"product_type_id"`
+		ManufacturerId   int                                `db:"manufacturer_id"`
+		ShortDescription string                             `db:"short_description"`
+		Description      string                             `db:"description"`
+		Variations       []*products_model.ProductVariation `db:"-"`
+		CreatedAt        time.Time                          `db:"created_at"`
+		UpdatedAt        time.Time                          `db:"updated_at"`
 
 		// ProductType
 		PTName string `db:"product_type_name"`
@@ -532,12 +571,39 @@ func (c *Product) GetBySlug(ctx context.Context, slug, lang string) (*products_m
 		CatId   int    `db:"category_id"`
 		CatName string `db:"category_name"`
 		CatSlug string `db:"category_slug"`
+
+		//Manufacturer
+		MId   int    `db:"-"`
+		MName string `db:"manufacturer_name"`
+		MSlug string `db:"manufacturer_slug"`
 	}
 
 	flat, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[FlatResult])
 	if err != nil {
 		return nil, err
 	}
+
+	sql, args, err = config.Psql.
+		Select("id", "product_id", "image", "price", "created_at", "updated_at").
+		From("product_variations").
+		Where(sq.Eq{"product_id": flat.Id}).
+		ToSql()
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+
+	rows, err = c.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+	defer rows.Close()
+
+	variations, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[products_model.ProductVariation])
+	if err != nil {
+		return nil, core.RowsError(err)
+	}
+
+	flat.Variations = variations
 
 	// Собираем вложенную структуру
 	result := &products_model.ProductWithParents{
@@ -549,6 +615,7 @@ func (c *Product) GetBySlug(ctx context.Context, slug, lang string) (*products_m
 			ManufacturerId:   flat.ManufacturerId,
 			ShortDescription: flat.ShortDescription,
 			Description:      flat.Description,
+			Variations:       flat.Variations,
 			CreatedAt:        flat.CreatedAt,
 			UpdatedAt:        flat.UpdatedAt,
 		},
@@ -564,6 +631,11 @@ func (c *Product) GetBySlug(ctx context.Context, slug, lang string) (*products_m
 					Slug: flat.CatSlug,
 				},
 			},
+		},
+		Manufacturer: products_model.Manufacturer{
+			Id:   flat.ManufacturerId,
+			Name: flat.MName,
+			Slug: flat.MSlug,
 		},
 	}
 
@@ -592,4 +664,16 @@ func (c *Product) CreateProductVariations(ctx context.Context, req *products_ser
 	}
 
 	return variation, nil
+}
+
+func (c *Product) DeleteProductVariation(ctx context.Context, id int) error {
+	sql, args, err := config.Psql.Delete("product_variations").Where(sq.Eq{"id": id}).ToSql()
+	if err != nil {
+		return core.BuildSQLError(err)
+	}
+	_, err = c.db.Exec(ctx, sql, args...)
+	if err != nil {
+		return core.QueryError(err)
+	}
+	return nil
 }

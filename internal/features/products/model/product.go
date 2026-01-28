@@ -34,15 +34,16 @@ type ProductWithTranslations struct {
 }
 
 type Product struct {
-	Id               int       `json:"id" db:"id"`
-	Name             string    `json:"name" db:"name"`
-	Slug             string    `json:"slug" db:"slug"`
-	ProductTypeId    int       `json:"product_type_id" db:"product_type_id"`
-	ManufacturerId   int       `json:"manufacturer_id" db:"manufacturer_id"`
-	ShortDescription string    `json:"short_description" db:"short_description"`
-	Description      string    `json:"description" db:"description"`
-	CreatedAt        time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
+	Id               int                 `json:"id" db:"id"`
+	Name             string              `json:"name" db:"name"`
+	Slug             string              `json:"slug" db:"slug"`
+	ProductTypeId    int                 `json:"product_type_id" db:"product_type_id"`
+	ManufacturerId   int                 `json:"manufacturer_id" db:"manufacturer_id"`
+	ShortDescription string              `json:"short_description" db:"short_description"`
+	Description      string              `json:"description" db:"description"`
+	Variations       []*ProductVariation `json:"variations" db:"variations"`
+	CreatedAt        time.Time           `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time           `json:"updated_at" db:"updated_at"`
 }
 
 type ProductPatch struct {
@@ -70,7 +71,8 @@ func NewProductPatch(name, description, shortDescription string, productTypeId, 
 
 type ProductWithParents struct {
 	Product
-	ProductType ProductType `json:"product_type"`
+	ProductType  ProductType  `json:"product_type"`
+	Manufacturer Manufacturer `json:"manufacturer"`
 }
 
 type ProductType struct {
@@ -86,6 +88,12 @@ type SubCategory struct {
 }
 
 type Category struct {
+	Id   int    `json:"id" db:"category_id"`
+	Name string `json:"name" db:"category_name"`
+	Slug string `json:"slug" db:"category_slug"`
+}
+
+type Manufacturer struct {
 	Id   int    `json:"id" db:"category_id"`
 	Name string `json:"name" db:"category_name"`
 	Slug string `json:"slug" db:"category_slug"`

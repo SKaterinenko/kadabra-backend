@@ -23,4 +23,5 @@ type ProductRepository interface {
 	GetByManufacturersIds(ctx context.Context, ids []int, lang string) ([]*products_model.Product, error)
 	GetBySlug(ctx context.Context, slug, lang string) (*products_model.ProductWithParents, error)
 	CreateProductVariations(ctx context.Context, req *VariationReq) (*products_model.ProductVariation, error)
+	DeleteProductVariation(ctx context.Context, id int) error
 }
