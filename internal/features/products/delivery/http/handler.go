@@ -220,7 +220,7 @@ func (h *Handler) CreateProductVariations(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	price, err := req.GetIntFromForm(formData, "price")
+	price, err := req.GetDecimalFromForm(formData, "price")
 	if err != nil {
 		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
 		return

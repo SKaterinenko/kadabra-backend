@@ -2,6 +2,7 @@ package req
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -46,4 +47,18 @@ func GetIntFromForm(formData *MultipartFormData, key string) (int, error) {
 		return 0, fmt.Errorf("field %s is required", key)
 	}
 	return strconv.Atoi(value)
+}
+
+func GetDecimalFromForm(formData *MultipartFormData, key string) (decimal.Decimal, error) {
+	value, exists := formData.FormValues[key]
+	if !exists {
+		return decimal.Zero, fmt.Errorf("field %s is required", key)
+	}
+
+	d, err := decimal.NewFromString(value)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("invalid decimal in field %s: %w", key, err)
+	}
+
+	return d, nil
 }

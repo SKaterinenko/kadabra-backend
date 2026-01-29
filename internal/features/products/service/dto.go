@@ -1,6 +1,9 @@
 package products_service
 
-import "mime/multipart"
+import (
+	"github.com/shopspring/decimal"
+	"mime/multipart"
+)
 
 type TranslationInput struct {
 	LanguageCode     string `json:"language_code"`
@@ -26,11 +29,11 @@ type PatchInput struct {
 type VariationInput struct {
 	ProductId int                   `json:"product_id"`
 	Image     *multipart.FileHeader `json:"image"`
-	Price     int                   `json:"price"`
+	Price     decimal.Decimal       `json:"price"`
 }
 
 type VariationReq struct {
-	ProductId int    `json:"product_id" db:"product_id"`
-	Image     string `json:"image" db:"image"`
-	Price     int    `json:"price" db:"price"`
+	ProductId int             `json:"product_id" db:"product_id"`
+	Image     string          `json:"image" db:"image"`
+	Price     decimal.Decimal `json:"price" db:"price"`
 }

@@ -15,10 +15,10 @@ func main() {
 	defer cleanup()
 
 	fmt.Println("Config", cfg)
-	fmt.Println("Server is listening on port", cfg.SERVER_PORT)
+	fmt.Println("Server is listening on port", cfg.ServerPort)
 
 	server := &http.Server{
-		Addr:    cfg.SERVER_PORT,
+		Addr:    cfg.ServerPort,
 		Handler: router,
 	}
 

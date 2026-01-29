@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS product_variations(
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     image text not null unique,
-    price int not null,
+    price NUMERIC(10,2) not null,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

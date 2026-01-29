@@ -1,6 +1,7 @@
 package products_model
 
 import (
+	"github.com/shopspring/decimal"
 	"time"
 )
 
@@ -100,10 +101,10 @@ type Manufacturer struct {
 }
 
 type ProductVariation struct {
-	Id        int       `json:"id" db:"id"`
-	ProductId int       `json:"product_id" db:"product_id"`
-	Image     string    `json:"image" db:"image"`
-	Price     int       `json:"price" db:"price"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	Id        int             `json:"id" db:"id"`
+	ProductId int             `json:"product_id" db:"product_id"`
+	Image     string          `json:"image" db:"image"`
+	Price     decimal.Decimal `json:"price" db:"price"`
+	CreatedAt time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at" db:"updated_at"`
 }

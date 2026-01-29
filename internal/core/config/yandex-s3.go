@@ -21,7 +21,7 @@ type S3Client struct {
 func NewS3Client(cfg *Config) (*S3Client, error) {
 	cfgS3, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("ru-central1"),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.S3_ACCESS_KEY, cfg.S3_SECRET_KEY, "")),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.S3AccessKey, cfg.S3SecretKey, "")),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
@@ -34,7 +34,7 @@ func NewS3Client(cfg *Config) (*S3Client, error) {
 
 	return &S3Client{
 		client:     client,
-		bucketName: cfg.S3_BUCKET,
+		bucketName: cfg.S3Bucket,
 	}, nil
 }
 

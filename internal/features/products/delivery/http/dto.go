@@ -1,6 +1,9 @@
 package products_http
 
-import "mime/multipart"
+import (
+	"github.com/shopspring/decimal"
+	"mime/multipart"
+)
 
 type TranslationInput struct {
 	LanguageCode     string `json:"language_code" validate:"required"`
@@ -30,5 +33,5 @@ type getByIdsDTO struct {
 type createVariationDTO struct {
 	ProductId int                   `form:"product_id" validate:"required,gt=0"`
 	Image     *multipart.FileHeader `form:"image" validate:"required,image_type"`
-	Price     int                   `form:"price" validate:"required,gte=0"`
+	Price     decimal.Decimal       `form:"price" validate:"required,gte=0"`
 }
