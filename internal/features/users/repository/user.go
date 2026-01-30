@@ -1,4 +1,4 @@
-package user_repository
+package users_postgres
 
 import (
 	"context"
@@ -14,11 +14,11 @@ type UserRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+func NewUsersPostgres(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Create(ctx context.Context, user *user_model.User) (*user_model.User, error) {
+func (r *UserRepository) Register(ctx context.Context, user *user_model.User) (*user_model.User, error) {
 	query, args, err := config.Psql.
 		Insert("users").
 		Columns(
@@ -39,7 +39,7 @@ func (r *UserRepository) Create(ctx context.Context, user *user_model.User) (*us
 			user.Gender,
 			user.PasswordHash,
 		).
-		Suffix("RETURNING id, first_name, last_name, email, birth_date, phone_number, gender, created_at, updated_at").
+		Suffix("RETURNING id, first_name, last_name, email, birth_date, phone_number, gender, password_hash, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
@@ -112,6 +112,42 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*user_model.Use
 		).
 		From("users").
 		Where(sq.Eq{"id": id}).
+		ToSql()
+
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	user, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[user_model.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (r *UserRepository) GetByPhoneNumber(ctx context.Context, phoneNumber string) (*user_model.User, error) {
+	query, args, err := config.Psql.
+		Select(
+			"id",
+			"first_name",
+			"last_name",
+			"email",
+			"birth_date",
+			"phone_number",
+			"gender",
+			"password_hash",
+			"created_at",
+			"updated_at",
+		).
+		From("users").
+		Where(sq.Eq{"phone_number": phoneNumber}).
 		ToSql()
 
 	if err != nil {

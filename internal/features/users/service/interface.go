@@ -1,4 +1,4 @@
-package service
+package users_service
 
 import (
 	"context"
@@ -6,7 +6,8 @@ import (
 )
 
 type UserRepository interface {
-	Create(ctx context.Context, user *user_model.User) (*user_model.User, error)
+	Register(ctx context.Context, user *user_model.User) (*user_model.User, error)
 	GetByEmail(ctx context.Context, email string) (*user_model.User, error)
 	GetByID(ctx context.Context, id int64) (*user_model.User, error)
+	GetByPhoneNumber(ctx context.Context, phoneNumber string) (*user_model.User, error)
 }

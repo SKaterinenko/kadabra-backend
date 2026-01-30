@@ -1,8 +1,10 @@
-package service
+package users_service
 
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/jackc/pgx/v5"
 	user_model "kadabra/internal/features/users/model"
 	"time"
 
@@ -10,23 +12,35 @@ import (
 	"kadabra/pkg/utils"
 )
 
-type UserService struct {
-	repo   UserRepository
-	config *config.Config
+type Service struct {
+	repo     UserRepository
+	s3Client *config.S3Client
+	config   *config.Config
 }
 
-func NewUserService(repo UserRepository, cfg *config.Config) *UserService {
-	return &UserService{
-		repo:   repo,
-		config: cfg,
-	}
+func NewService(repo UserRepository, s3Client *config.S3Client, cfg *config.Config) *Service {
+	return &Service{repo: repo, s3Client: s3Client, config: cfg}
 }
 
-func (s *UserService) Register(ctx context.Context, req *CreateUserRequest) (*AuthResponse, error) {
+func (s *Service) Register(ctx context.Context, req *CreateUserRequest) (*AuthResponse, error) {
 	// Проверяем, существует ли пользователь
-	existingUser, _ := s.repo.GetByEmail(ctx, req.Email)
+	existingUser, err := s.repo.GetByEmail(ctx, req.Email)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("failed to check email: %w", err)
+	}
 	if existingUser != nil {
 		return nil, errors.New("user with this email already exists")
+	}
+
+	// Если номер телефона указан, проверяем на уникальность
+	if req.PhoneNumber != "" {
+		existingPhone, err := s.repo.GetByPhoneNumber(ctx, req.PhoneNumber)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("failed to check phone: %w", err)
+		}
+		if existingPhone != nil {
+			return nil, errors.New("user with this phone number already exists")
+		}
 	}
 
 	// Хешируем пароль
@@ -41,18 +55,24 @@ func (s *UserService) Register(ctx context.Context, req *CreateUserRequest) (*Au
 		return nil, errors.New("invalid birth date format, use YYYY-MM-DD")
 	}
 
+	// Подготавливаем phone_number (если пустой -> NULL)
+	var phoneNumber *string
+	if req.PhoneNumber != "" {
+		phoneNumber = &req.PhoneNumber
+	}
+
 	// Создаём пользователя
 	user := &user_model.User{
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
 		Email:        req.Email,
 		BirthDate:    birthDate,
-		PhoneNumber:  req.PhoneNumber,
+		PhoneNumber:  phoneNumber, // nil если не указан
 		Gender:       req.Gender,
 		PasswordHash: passwordHash,
 	}
 
-	newUser, err := s.repo.Create(ctx, user)
+	newUser, err := s.repo.Register(ctx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -76,11 +96,11 @@ func (s *UserService) Register(ctx context.Context, req *CreateUserRequest) (*Au
 	}, nil
 }
 
-func (s *UserService) Login(ctx context.Context, email, password string) (*AuthResponse, error) {
+func (s *Service) Login(ctx context.Context, email, password string) (*AuthResponse, error) {
 	// Получаем пользователя
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, err
 	}
 
 	// Проверяем пароль
@@ -103,6 +123,38 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*AuthR
 	return &AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		User:         user,
+	}, nil
+}
+
+func (s *Service) RefreshTokens(ctx context.Context, refreshToken string) (*AuthResponse, error) {
+	// Валидируем refresh token
+	claims, err := utils.ValidateToken(refreshToken, s.config.JWTSecret)
+	if err != nil {
+		return nil, errors.New("invalid refresh token")
+	}
+
+	// Получаем пользователя
+	user, err := s.repo.GetByID(ctx, claims.UserID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Генерируем новую пару токенов
+	newAccessToken, newRefreshToken, err := utils.GenerateTokenPair(
+		user.ID,
+		user.Email,
+		s.config.JWTSecret,
+		s.config.JWTAccessExpiration,
+		s.config.JWTRefreshExpiration,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+	}
+
+	return &AuthResponse{
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
 		User:         user,
 	}, nil
 }

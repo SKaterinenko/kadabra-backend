@@ -1,4 +1,4 @@
-package service
+package users_service
 
 import user_model "kadabra/internal/features/users/model"
 

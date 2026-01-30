@@ -18,6 +18,9 @@ import (
 	sub_categories_http "kadabra/internal/features/sub_categories/delivery/http"
 	sub_categories_postgres "kadabra/internal/features/sub_categories/repository/postgres"
 	sub_categories_service "kadabra/internal/features/sub_categories/service"
+	users_http "kadabra/internal/features/users/handler/http"
+	users_postgres "kadabra/internal/features/users/repository"
+	users_service "kadabra/internal/features/users/service"
 
 	"log"
 	"net/http"
@@ -56,6 +59,7 @@ func App() (context.Context, *http.ServeMux, *config.Config, func()) {
 	manufacturerRepository := manufacturers_postgres.NewManufacturerPostgres(postgresDB)
 	productsTypeRepository := products_type_postgres.NewProductsTypePostgres(postgresDB)
 	productsRepository := products_postgres.NewProductPostgres(postgresDB)
+	usersRepository := users_postgres.NewUsersPostgres(postgresDB)
 
 	// Service
 	category := categories_service.NewService(categoryRepository)
@@ -63,6 +67,7 @@ func App() (context.Context, *http.ServeMux, *config.Config, func()) {
 	manufacturer := manufacturers_service.NewService(manufacturerRepository)
 	productsType := products_type_service.NewService(productsTypeRepository)
 	products := products_service.NewService(productsRepository, s3Client)
+	users := users_service.NewService(usersRepository, s3Client, cfg)
 
 	// Handlers
 	categories_http.NewHandler(router, &categories_http.HandlerDeps{
@@ -79,6 +84,10 @@ func App() (context.Context, *http.ServeMux, *config.Config, func()) {
 	})
 	products_http.NewHandler(router, &products_http.HandlerDeps{
 		Service: products,
+	})
+	users_http.NewHandler(router, &users_http.HandlerDeps{
+		Service: users,
+		Cfg:     cfg,
 	})
 
 	cleanup := func() {
