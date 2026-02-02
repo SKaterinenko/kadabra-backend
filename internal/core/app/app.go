@@ -21,6 +21,7 @@ import (
 	users_http "kadabra/internal/features/users/handler/http"
 	users_postgres "kadabra/internal/features/users/repository"
 	users_service "kadabra/internal/features/users/service"
+	"kadabra/pkg/middleware"
 
 	"log"
 	"net/http"
@@ -29,7 +30,7 @@ import (
 	"syscall"
 )
 
-func App() (context.Context, *http.ServeMux, *config.Config, func()) {
+func App() (context.Context, http.Handler, *config.Config, func()) {
 	router := http.NewServeMux()
 
 	// Config
@@ -90,10 +91,15 @@ func App() (context.Context, *http.ServeMux, *config.Config, func()) {
 		Cfg:     cfg,
 	})
 
+	// Middlewares
+	stack := middleware.Chain(
+		middleware.CORS,
+	)
+
 	cleanup := func() {
 		stop()
 		postgresDB.Close()
 	}
 
-	return ctx, router, cfg, cleanup
+	return ctx, stack(router), cfg, cleanup
 }

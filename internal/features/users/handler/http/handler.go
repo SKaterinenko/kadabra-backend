@@ -29,7 +29,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[registerDTO](&w, r)
+	body, err := req.HandleBody[registerDTO](w, r)
 	if err != nil {
 		return
 	}
@@ -53,7 +53,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[loginDTO](&w, r)
+	body, err := req.HandleBody[loginDTO](w, r)
 	if err != nil {
 		return
 	}

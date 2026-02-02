@@ -36,7 +36,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[createDTO](&w, r)
+	body, err := req.HandleBody[createDTO](w, r)
 	if err != nil {
 		return
 	}
@@ -122,7 +122,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[patchDTO](&w, r)
+	body, err := req.HandleBody[patchDTO](w, r)
 	if err != nil {
 		return
 	}
@@ -146,7 +146,7 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetByCategoryIds(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[getByIdsDTO](&w, r)
+	body, err := req.HandleBody[getByIdsDTO](w, r)
 	if err != nil {
 		return
 	}
@@ -159,7 +159,7 @@ func (h *Handler) GetByCategoryIds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetByProductsTypeIds(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[getByIdsDTO](&w, r)
+	body, err := req.HandleBody[getByIdsDTO](w, r)
 	if err != nil {
 		return
 	}
@@ -183,7 +183,7 @@ func (h *Handler) GetByCategorySlug(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetByManufacturersIds(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[getByIdsDTO](&w, r)
+	body, err := req.HandleBody[getByIdsDTO](w, r)
 	if err != nil {
 		return
 	}
