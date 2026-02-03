@@ -26,6 +26,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("POST /auth/login", handler.Login)
 	router.HandleFunc("POST /auth/logout", handler.Logout)
 	router.HandleFunc("POST /auth/refresh", handler.RefreshTokens)
+	router.HandleFunc("GET /auth/me", handler.Me)
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -72,12 +73,11 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("refresh_token")
+	cookie, err := r.Cookie("access_token")
 	if err != nil {
-
 		utils.ClearAuthCookies(w)
 		res.Json(w, res.ResDTO{
-			Message: "Refresh token not found",
+			Message: "Access token not found",
 			Ok:      false,
 		}, http.StatusUnauthorized)
 		return
@@ -94,4 +94,27 @@ func (h *Handler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
 
 	// Отдаём данные пользователя
 	res.Json(w, authResp.User, http.StatusOK)
+}
+
+func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
+	// Получаем access token из куки
+	cookie, err := r.Cookie("access_token")
+	if err != nil {
+		res.Json(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Валидируем и парсим токен
+	claims, err := utils.ValidateToken(cookie.Value, h.cfg.JWTSecret)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	// Получаем пользователя из БД
+	user, err := h.service.GetByID(r.Context(), claims.UserID)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	res.Json(w, user, http.StatusOK)
 }

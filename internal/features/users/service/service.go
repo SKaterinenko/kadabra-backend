@@ -127,9 +127,9 @@ func (s *Service) Login(ctx context.Context, email, password string) (*AuthRespo
 	}, nil
 }
 
-func (s *Service) RefreshTokens(ctx context.Context, refreshToken string) (*AuthResponse, error) {
+func (s *Service) RefreshTokens(ctx context.Context, accessToken string) (*AuthResponse, error) {
 	// Валидируем refresh token
-	claims, err := utils.ValidateToken(refreshToken, s.config.JWTSecret)
+	claims, err := utils.ValidateToken(accessToken, s.config.JWTSecret)
 	if err != nil {
 		return nil, errors.New("invalid refresh token")
 	}
@@ -157,4 +157,12 @@ func (s *Service) RefreshTokens(ctx context.Context, refreshToken string) (*Auth
 		RefreshToken: newRefreshToken,
 		User:         user,
 	}, nil
+}
+
+func (s *Service) GetByID(ctx context.Context, id int64) (*user_model.User, error) {
+	user, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
