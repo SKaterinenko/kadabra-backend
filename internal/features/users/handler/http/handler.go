@@ -25,8 +25,8 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	router.HandleFunc("POST /auth/register", handler.Register)
 	router.HandleFunc("POST /auth/login", handler.Login)
 	router.HandleFunc("POST /auth/logout", handler.Logout)
-	router.HandleFunc("POST /auth/refresh", handler.RefreshTokens)
-	router.HandleFunc("GET /auth/me", handler.Me)
+	router.HandleFunc("GET /auth/refresh", handler.RefreshTokens)
+	router.HandleFunc("GET /me", handler.Me)
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -73,11 +73,11 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("access_token")
+	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		utils.ClearAuthCookies(w)
 		res.Json(w, res.ResDTO{
-			Message: "Access token not found",
+			Message: "Refresh token not found",
 			Ok:      false,
 		}, http.StatusUnauthorized)
 		return
@@ -100,7 +100,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	// Получаем access token из куки
 	cookie, err := r.Cookie("access_token")
 	if err != nil {
-		res.Json(w, "Unauthorized", http.StatusUnauthorized)
+		res.Json(w, res.ResDTO{Message: "Unauthorized", Ok: false}, http.StatusUnauthorized)
 		return
 	}
 

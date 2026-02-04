@@ -45,7 +45,7 @@ func LoadConfig() (*Config, error) {
 		S3AccessKey:          os.Getenv("S3_ACCESS_KEY"),
 		S3SecretKey:          os.Getenv("S3_SECRET_KEY"),
 		JWTSecret:            os.Getenv("JWT_SECRET"),
-		JWTAccessExpiration:  10 * time.Minute,
-		JWTRefreshExpiration: 2 * time.Minute,
+		JWTAccessExpiration:  2 * time.Minute,
+		JWTRefreshExpiration: 5 * time.Minute,
 	}, nil
 }

@@ -7,18 +7,18 @@ import (
 
 // SetAuthCookies Установка токенов в cookies
 func SetAuthCookies(w http.ResponseWriter, accessToken, refreshToken string, cfg *config.Config) {
-	// Access Token Cookie (15 минут)
+	// Access Token Cookie коротко живущий
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
-		HttpOnly: true,                    // Защита от XSS
-		Secure:   true,                    // Только HTTPS (в production)
-		SameSite: http.SameSiteStrictMode, // Защита от CSRF
+		HttpOnly: true,                 // Защита от XSS
+		Secure:   true,                 // Только HTTPS (в production)
+		SameSite: http.SameSiteLaxMode, // Защита от CSRF
 		MaxAge:   int(cfg.JWTAccessExpiration.Seconds()),
 	})
 
-	// Refresh Token Cookie (7 дней)
+	// Refresh Token Cookie долго живущий
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
