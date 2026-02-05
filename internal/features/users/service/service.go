@@ -23,6 +23,10 @@ func NewService(repo UserRepository, s3Client *config.S3Client, cfg *config.Conf
 }
 
 func (s *Service) Register(ctx context.Context, req *CreateUserRequest) (*AuthResponse, error) {
+	if req.Password != req.RepeatPassword {
+		return nil, errors.New("the passwords don't match")
+	}
+
 	// Проверяем, существует ли пользователь
 	existingUser, err := s.repo.GetByEmail(ctx, req.Email)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
