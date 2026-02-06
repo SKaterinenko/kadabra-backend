@@ -21,12 +21,12 @@ type Handler struct {
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	handler := &Handler{service: deps.Service}
 
-	router.HandleFunc("POST /categories", handler.Create)
-	router.HandleFunc("GET /categories", handler.GetAll)
-	//router.HandleFunc("GET /categories/{id}", handler.GetById)
-	router.HandleFunc("GET /categories/{slug}", handler.GetBySlug)
-	router.HandleFunc("DELETE /categories/{id}", handler.Delete)
-	//router.HandleFunc("PATCH /categories/{id}", handler.Patch)
+	router.HandleFunc("POST /api/categories", handler.Create)
+	router.HandleFunc("GET /api/categories", handler.GetAll)
+	//router.HandleFunc("GET /api/categories/{id}", handler.GetById)
+	router.HandleFunc("GET /api/categories/{slug}", handler.GetBySlug)
+	router.HandleFunc("DELETE /api/categories/{id}", handler.Delete)
+	//router.HandleFunc("PATCH /api/categories/{id}", handler.Patch)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

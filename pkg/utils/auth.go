@@ -62,7 +62,7 @@ func GenerateTokenPair(userID int64, email, secret string, accessExp, refreshExp
 	return accessTokenString, refreshTokenString, nil
 }
 
-// ValidateToken проверяет токен
+// ValidateToken проверяет токен и возвращает поля из токена (Claims)
 func ValidateToken(tokenString, secret string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil

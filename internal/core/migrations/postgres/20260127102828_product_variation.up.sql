@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS product_variations(
-    id SERIAL PRIMARY KEY,
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     image text not null unique,
     price NUMERIC(10,2) not null,

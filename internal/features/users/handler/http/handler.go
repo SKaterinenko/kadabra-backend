@@ -22,11 +22,11 @@ type Handler struct {
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	handler := &Handler{service: deps.Service, cfg: deps.Cfg}
 
-	router.HandleFunc("POST /auth/register", handler.Register)
-	router.HandleFunc("POST /auth/login", handler.Login)
-	router.HandleFunc("POST /auth/logout", handler.Logout)
-	router.HandleFunc("GET /auth/refresh", handler.RefreshTokens)
-	router.HandleFunc("GET /me", handler.Me)
+	router.HandleFunc("POST /api/auth/register", handler.Register)
+	router.HandleFunc("POST /api/auth/login", handler.Login)
+	router.HandleFunc("POST /api/auth/logout", handler.Logout)
+	router.HandleFunc("GET /api/auth/refresh", handler.RefreshTokens)
+	router.HandleFunc("GET /api/me", handler.Me)
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {

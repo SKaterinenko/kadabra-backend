@@ -61,6 +61,7 @@ func (c *Category) Create(ctx context.Context, req *categories_service.CreateInp
 		}
 
 		rows, err := tx.Query(ctx, query, args...)
+
 		if err != nil {
 			return nil, fmt.Errorf("insert translation: %w", err)
 		}
@@ -95,7 +96,7 @@ func (c *Category) GetAll(ctx context.Context, language string) ([]*categories_m
 			"c.updated_at",
 		).
 		From("categories c").
-		InnerJoin("category_translations ct ON c.id = ct.category_id").
+		Join("category_translations ct ON c.id = ct.category_id").
 		Where(sq.Eq{"ct.language_code": language}).
 		OrderBy("c.id ASC").
 		ToSql()

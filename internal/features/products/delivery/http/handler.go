@@ -21,18 +21,18 @@ type Handler struct {
 func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	handler := &Handler{service: deps.Service}
 
-	router.HandleFunc("POST /products", handler.Create)
-	router.HandleFunc("GET /products", handler.GetAll)
-	router.HandleFunc("GET /products/{id}", handler.GetById)
-	router.HandleFunc("DELETE /products/{id}", handler.Delete)
-	router.HandleFunc("PATCH /products/{id}", handler.Patch)
-	router.HandleFunc("POST /products-by-category-ids", handler.GetByCategoryIds)
-	router.HandleFunc("POST /products-by-products-type-ids", handler.GetByProductsTypeIds)
-	router.HandleFunc("GET /products-by-category-slug/{slug}", handler.GetByCategorySlug)
-	router.HandleFunc("GET /products-by-manufacturer-id/{id}", handler.GetByManufacturersIds)
-	router.HandleFunc("GET /product/{slug}", handler.GetProductBySlug)
-	router.HandleFunc("POST /product-variations", handler.CreateProductVariations)
-	router.HandleFunc("DELETE /product-variations/{id}", handler.DeleteProductVariations)
+	router.HandleFunc("POST /api/products", handler.Create)
+	router.HandleFunc("GET /api/products", handler.GetAll)
+	router.HandleFunc("GET /api/products/{id}", handler.GetById)
+	router.HandleFunc("DELETE /api/products/{id}", handler.Delete)
+	router.HandleFunc("PATCH /api/products/{id}", handler.Patch)
+	router.HandleFunc("POST /api/products-by-category-ids", handler.GetByCategoryIds)
+	router.HandleFunc("POST /api/products-by-products-type-ids", handler.GetByProductsTypeIds)
+	router.HandleFunc("GET /api/products-by-category-slug/{slug}", handler.GetByCategorySlug)
+	router.HandleFunc("GET /api/products-by-manufacturer-id/{id}", handler.GetByManufacturersIds)
+	router.HandleFunc("GET /api/product/{slug}", handler.GetProductBySlug)
+	router.HandleFunc("POST /api/product-variations", handler.CreateProductVariations)
+	router.HandleFunc("DELETE /api/product-variations/{id}", handler.DeleteProductVariations)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
