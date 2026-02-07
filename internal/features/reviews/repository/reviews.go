@@ -140,6 +140,22 @@ func (r *Repository) GetAllById(ctx context.Context, id, limit, offset int) (*re
 			reviews.Ratings.Rating5 = count
 		}
 
+		sql, args, err = config.Psql.
+			Select("COUNT(*)").
+			From("reviews").
+			Where(sq.Eq{
+				"product_id": id,
+			}).
+			ToSql()
+		if err != nil {
+			return nil, core.BuildSQLError(err)
+		}
+
+		err = r.db.QueryRow(ctx, sql, args...).Scan(&reviews.Ratings.TotalCount)
+		if err != nil {
+			return nil, core.QueryError(err)
+		}
+
 	}
 	return &reviews, nil
 }
