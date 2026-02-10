@@ -37,3 +37,11 @@ func (s *Service) GetAllById(ctx context.Context, id, limit, offset int) (*revie
 	}
 	return reviews, nil
 }
+
+func (s *Service) Delete(ctx context.Context, id int) error {
+	err := s.repo.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

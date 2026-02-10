@@ -5,6 +5,7 @@ import (
 	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/gosimple/slug"
+	reviews_model "kadabra/internal/features/reviews/model"
 	"time"
 
 	"kadabra/internal/core"
@@ -122,6 +123,75 @@ func (c *Product) Create(ctx context.Context, req *products_service.CreateInput)
 	return product, nil
 }
 
+func (c *Product) loadRatings(ctx context.Context, productIDs []int) (map[int]reviews_model.Rating, error) {
+	if len(productIDs) == 0 {
+		return make(map[int]reviews_model.Rating), nil
+	}
+
+	sql, args, err := config.Psql.
+		Select(
+			"product_id",
+			"COUNT(*) as total_count",
+			"COUNT(*) FILTER (WHERE rating = 5) as rating_5",
+			"COUNT(*) FILTER (WHERE rating = 4) as rating_4",
+			"COUNT(*) FILTER (WHERE rating = 3) as rating_3",
+			"COUNT(*) FILTER (WHERE rating = 2) as rating_2",
+			"COUNT(*) FILTER (WHERE rating = 1) as rating_1",
+		).
+		From("reviews").
+		Where(sq.Eq{"product_id": productIDs}).
+		GroupBy("product_id").
+		ToSql()
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+
+	rows, err := c.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+	defer rows.Close()
+
+	type RatingRow struct {
+		ProductID  int                  `db:"product_id"`
+		Rating     reviews_model.Rating `db:"-"`
+		TotalCount int                  `db:"total_count"`
+		Rating5    int                  `db:"rating_5"`
+		Rating4    int                  `db:"rating_4"`
+		Rating3    int                  `db:"rating_3"`
+		Rating2    int                  `db:"rating_2"`
+		Rating1    int                  `db:"rating_1"`
+	}
+
+	ratingsMap := make(map[int]reviews_model.Rating)
+	for rows.Next() {
+		var row RatingRow
+		err := rows.Scan(
+			&row.ProductID,
+			&row.TotalCount,
+			&row.Rating5,
+			&row.Rating4,
+			&row.Rating3,
+			&row.Rating2,
+			&row.Rating1,
+		)
+		if err != nil {
+			return nil, core.ScanError(err)
+		}
+
+		ratingsMap[row.ProductID] = reviews_model.Rating{
+			TotalCount: row.TotalCount,
+			Rating5:    row.Rating5,
+			Rating4:    row.Rating4,
+			Rating3:    row.Rating3,
+			Rating2:    row.Rating2,
+			Rating1:    row.Rating1,
+		}
+	}
+
+	return ratingsMap, nil
+}
+
 func (c *Product) GetAll(
 	ctx context.Context,
 	lang string,
@@ -183,6 +253,7 @@ func (c *Product) GetAll(
 	defer rows.Close()
 
 	var products []*products_model.Product
+	productIDs := make([]int, 0)
 
 	for rows.Next() {
 		var emptyProduct products_model.Product
@@ -198,6 +269,7 @@ func (c *Product) GetAll(
 			&emptyProduct.UpdatedAt,
 		)
 
+		// Загрузка вариаций
 		sql, args, err := config.Psql.
 			Select("id", "product_id", "image", "price", "created_at", "updated_at").
 			From("product_variations").
@@ -207,20 +279,33 @@ func (c *Product) GetAll(
 			return nil, core.BuildSQLError(err)
 		}
 
-		rows, err := c.db.Query(ctx, sql, args...)
+		variationRows, err := c.db.Query(ctx, sql, args...)
 		if err != nil {
 			return nil, core.QueryError(err)
 		}
-		defer rows.Close()
 
-		variations, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[products_model.ProductVariation])
+		variations, err := pgx.CollectRows(variationRows, pgx.RowToAddrOfStructByName[products_model.ProductVariation])
+		variationRows.Close()
 		if err != nil {
 			return nil, core.RowsError(err)
 		}
 
 		emptyProduct.Variations = variations
-
 		products = append(products, &emptyProduct)
+		productIDs = append(productIDs, emptyProduct.Id)
+	}
+
+	// Загрузка рейтингов
+	ratingsMap, err := c.loadRatings(ctx, productIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Присваивание рейтингов продуктам
+	for _, product := range products {
+		if rating, ok := ratingsMap[product.Id]; ok {
+			product.Rating = rating
+		}
 	}
 
 	// Запрос для подсчета общего количества

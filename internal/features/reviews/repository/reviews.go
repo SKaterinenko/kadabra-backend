@@ -2,6 +2,7 @@ package reviews_postgres
 
 import (
 	"context"
+	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -158,4 +159,19 @@ func (r *Repository) GetAllById(ctx context.Context, id, limit, offset int) (*re
 
 	}
 	return &reviews, nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id int) error {
+	sql, args, err := config.Psql.Delete("reviews").Where(sq.Eq{"id": id}).ToSql()
+	if err != nil {
+		return core.BuildSQLError(err)
+	}
+	cmd, err := r.db.Exec(ctx, sql, args...)
+	if err != nil {
+		return core.QueryError(err)
+	}
+	if cmd.RowsAffected() == 0 {
+		return errors.New("review not found")
+	}
+	return nil
 }

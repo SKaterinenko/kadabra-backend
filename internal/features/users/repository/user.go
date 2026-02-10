@@ -39,7 +39,7 @@ func (r *UserRepository) Register(ctx context.Context, user *user_model.User) (*
 			user.Gender,
 			user.PasswordHash,
 		).
-		Suffix("RETURNING id, first_name, last_name, email, birth_date, phone_number, gender, password_hash, created_at, updated_at").
+		Suffix("RETURNING id, first_name, last_name, email, birth_date, phone_number, gender, avatar, password_hash, created_at, updated_at").
 		ToSql()
 
 	if err != nil {
@@ -70,6 +70,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user_mo
 			"birth_date",
 			"phone_number",
 			"gender",
+			"avatar",
 			"password_hash",
 			"created_at",
 			"updated_at",
@@ -106,6 +107,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*user_model.Use
 			"birth_date",
 			"phone_number",
 			"gender",
+			"avatar",
 			"password_hash",
 			"created_at",
 			"updated_at",
@@ -142,6 +144,7 @@ func (r *UserRepository) GetByPhoneNumber(ctx context.Context, phoneNumber strin
 			"birth_date",
 			"phone_number",
 			"gender",
+			"avatar",
 			"password_hash",
 			"created_at",
 			"updated_at",

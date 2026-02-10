@@ -27,11 +27,11 @@ type ReviewUser struct {
 
 type Rating struct {
 	TotalCount int `json:"total_count" db:"total_count"`
-	Rating5    int `json:"rating_5"`
-	Rating4    int `json:"rating_4"`
-	Rating3    int `json:"rating_3"`
-	Rating2    int `json:"rating_2"`
-	Rating1    int `json:"rating_1"`
+	Rating5    int `json:"rating_5" db:"rating_5"`
+	Rating4    int `json:"rating_4" db:"rating_4"`
+	Rating3    int `json:"rating_3" db:"rating_3"`
+	Rating2    int `json:"rating_2" db:"rating_2"`
+	Rating1    int `json:"rating_1" db:"rating_1"`
 }
 
 type ResReviews struct {

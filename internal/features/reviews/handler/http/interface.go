@@ -9,4 +9,5 @@ import (
 type ReviewsService interface {
 	Create(ctx context.Context, review *reviews_service.CreateInput) (*reviews_model.Review, error)
 	GetAllById(ctx context.Context, id, limit, offset int) (*reviews_model.ResReviews, error)
+	Delete(ctx context.Context, id int) error
 }

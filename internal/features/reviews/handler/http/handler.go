@@ -25,6 +25,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 
 	router.HandleFunc("POST /api/reviews", handler.Create)
 	router.HandleFunc("GET /api/reviews/{id}", handler.GetAllById)
+	router.HandleFunc("DELETE /api/reviews/{id}", handler.Delete)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -61,10 +62,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetAllById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
+	if utils.CheckErr(&w, err) {
+		return
+	}
 
 	q := r.URL.Query()
 	limit, offset, err := utils.GetLimitOffset(q)
-
 	if utils.CheckErr(&w, err) {
 		return
 	}
@@ -75,4 +78,19 @@ func (h *Handler) GetAllById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res.Json(w, review, http.StatusOK)
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	err = h.service.Delete(r.Context(), id)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	res.Json(w, res.ResDTO{Message: "Delete successful", Ok: true}, http.StatusOK)
 }

@@ -22,7 +22,7 @@ func SetAuthCookies(w http.ResponseWriter, accessToken, refreshToken string, cfg
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
-		Path:     "/auth/refresh", // Только для refresh endpoint
+		Path:     "api/auth/refresh", // Только для refresh endpoint
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
@@ -45,7 +45,7 @@ func ClearAuthCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
-		Path:     "/auth/refresh",
+		Path:     "api/auth/refresh",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
