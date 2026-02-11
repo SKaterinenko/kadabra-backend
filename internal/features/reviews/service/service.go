@@ -4,6 +4,7 @@ import (
 	"context"
 	"kadabra/internal/core/config"
 	reviews_model "kadabra/internal/features/reviews/model"
+	"mime/multipart"
 )
 
 type Service struct {
@@ -18,9 +19,28 @@ func NewService(repo ReviewsRepository, s3Client *config.S3Client, cfg *config.C
 
 func (s *Service) Create(ctx context.Context, input *CreateInput) (*reviews_model.Review, error) {
 	if input.Images == nil {
-		input.Images = []string{}
+		input.Images = []*multipart.FileHeader{}
 	}
-	review, err := s.repo.Create(ctx, input)
+
+	images := []string{}
+
+	for _, img := range input.Images {
+		file, err := s.s3Client.UploadFile(ctx, img)
+		if err != nil {
+			return nil, err
+		}
+		images = append(images, file)
+	}
+
+	req := &CreateReq{
+		UserId:      input.UserId,
+		ProductId:   input.ProductId,
+		Description: input.Description,
+		Rating:      input.Rating,
+		Images:      images,
+	}
+
+	review, err := s.repo.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}

@@ -226,9 +226,9 @@ func (h *Handler) CreateProductVariations(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	imageFile, exists := formData.Files["image"]
-	if !exists {
-		res.Json(w, res.ResDTO{Message: "image file is required", Ok: false}, http.StatusBadRequest)
+	imageFile, err := req.GetSingleFileFromForm(formData, "image")
+	if err != nil {
+		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
 		return
 	}
 

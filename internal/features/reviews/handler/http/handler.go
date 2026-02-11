@@ -29,10 +29,12 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	body, err := req.HandleBody[createDTO](w, r)
-	if utils.CheckErr(&w, err) {
+	formData, err := req.ParseMultipartForm(r, 10<<20) // 10MB max
+	if err != nil {
+		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
 		return
 	}
+
 	cookie, err := r.Cookie("access_token")
 	if utils.CheckErr(&w, err) {
 		return
@@ -43,12 +45,42 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	productId, err := req.GetIntFromForm(formData, "product_id")
+	if err != nil {
+		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	description, exists := formData.FormValues["description"]
+	if !exists {
+		res.Json(w, res.ResDTO{Message: "description is required", Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	rating, err := req.GetIntFromForm(formData, "rating")
+	if err != nil {
+		res.Json(w, res.ResDTO{Message: err.Error(), Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	// Получаем массив изображений
+	images, exists := formData.Files["images"]
+	if !exists || len(images) == 0 {
+		res.Json(w, res.ResDTO{Message: "at least one image is required", Ok: false}, http.StatusBadRequest)
+		return
+	}
+
+	if len(images) > 3 {
+		res.Json(w, res.ResDTO{Message: "maximum 3 images allowed", Ok: false}, http.StatusBadRequest)
+		return
+	}
+
 	input := &reviews_service.CreateInput{
 		UserId:      claims.UserID,
-		ProductId:   body.ProductId,
-		Description: body.Description,
-		Rating:      body.Rating,
-		Images:      body.Images,
+		ProductId:   productId,
+		Description: description,
+		Rating:      rating,
+		Images:      images,
 	}
 
 	review, err := h.service.Create(r.Context(), input)

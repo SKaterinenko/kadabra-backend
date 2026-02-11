@@ -20,7 +20,7 @@ func NewReviewsPostgres(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) Create(ctx context.Context, review *reviews_service.CreateInput) (*reviews_model.Review, error) {
+func (r *Repository) Create(ctx context.Context, review *reviews_service.CreateReq) (*reviews_model.Review, error) {
 	query, args, err := config.Psql.
 		Insert("reviews").
 		Columns(

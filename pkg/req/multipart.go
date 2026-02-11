@@ -10,7 +10,7 @@ import (
 
 type MultipartFormData struct {
 	FormValues map[string]string
-	Files      map[string]*multipart.FileHeader
+	Files      map[string][]*multipart.FileHeader
 }
 
 func ParseMultipartForm(r *http.Request, maxMemory int64) (*MultipartFormData, error) {
@@ -21,7 +21,7 @@ func ParseMultipartForm(r *http.Request, maxMemory int64) (*MultipartFormData, e
 
 	formData := &MultipartFormData{
 		FormValues: make(map[string]string),
-		Files:      make(map[string]*multipart.FileHeader),
+		Files:      make(map[string][]*multipart.FileHeader),
 	}
 
 	// Получаем текстовые поля
@@ -31,11 +31,9 @@ func ParseMultipartForm(r *http.Request, maxMemory int64) (*MultipartFormData, e
 		}
 	}
 
-	// Получаем файлы
+	// Получаем файлы (все файлы с одним ключом)
 	for key, files := range r.MultipartForm.File {
-		if len(files) > 0 {
-			formData.Files[key] = files[0]
-		}
+		formData.Files[key] = files
 	}
 
 	return formData, nil
@@ -61,4 +59,13 @@ func GetDecimalFromForm(formData *MultipartFormData, key string) (decimal.Decima
 	}
 
 	return d, nil
+}
+
+// Для получения одного файла
+func GetSingleFileFromForm(formData *MultipartFormData, key string) (*multipart.FileHeader, error) {
+	files, exists := formData.Files[key]
+	if !exists || len(files) == 0 {
+		return nil, fmt.Errorf("file %s is required", key)
+	}
+	return files[0], nil
 }
