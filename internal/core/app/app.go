@@ -67,7 +67,7 @@ func App() (context.Context, http.Handler, *config.Config, func()) {
 	reviewsRepository := reviews_postgres.NewReviewsPostgres(postgresDB)
 
 	// Service
-	category := categories_service.NewService(categoryRepository)
+	category := categories_service.NewService(categoryRepository, s3Client)
 	subCategory := sub_categories_service.NewService(subCategoryRepository)
 	manufacturer := manufacturers_service.NewService(manufacturerRepository)
 	productsType := products_type_service.NewService(productsTypeRepository)

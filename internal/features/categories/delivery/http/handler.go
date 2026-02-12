@@ -26,7 +26,7 @@ func NewHandler(router *http.ServeMux, deps *HandlerDeps) {
 	//router.HandleFunc("GET /api/categories/{id}", handler.GetById)
 	router.HandleFunc("GET /api/categories/{slug}", handler.GetBySlug)
 	router.HandleFunc("DELETE /api/categories/{id}", handler.Delete)
-	//router.HandleFunc("PATCH /api/categories/{id}", handler.Patch)
+	router.HandleFunc("PATCH /api/categories/{id}", handler.Patch)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -100,22 +100,29 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful"}, http.StatusOK)
 }
 
-//func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
-//	body, err := req.HandleBody[patchDTO](w, r)
-//	if err != nil {
-//		return
-//	}
-//	idStr := r.PathValue("id")
-//	id, err := strconv.Atoi(idStr)
-//	if utils.CheckErr(&w, err) {
-//		return
-//	}
-//	input := &categories_service.PatchInput{
-//		Name: body.Name,
-//	}
-//	category, err := h.service.Patch(r.Context(), id, input)
-//	if utils.CheckErr(&w, err) {
-//		return
-//	}
-//	res.Json(w, category, http.StatusOK)
-//}
+func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
+	formData, err := req.ParseMultipartForm(r, 10<<20) // 10MB max
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+	imageFile, err := req.GetSingleFileFromForm(formData, "image")
+	if utils.CheckErr(&w, err) {
+		return
+	}
+
+	input := &categories_service.PatchInput{
+		Image: imageFile,
+	}
+
+	category, err := h.service.Patch(r.Context(), id, input)
+	if utils.CheckErr(&w, err) {
+		return
+	}
+	res.Json(w, category, http.StatusOK)
+}

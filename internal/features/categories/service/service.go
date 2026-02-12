@@ -3,15 +3,17 @@ package categories_service
 import (
 	"context"
 	"fmt"
+	"kadabra/internal/core/config"
 	categories_model "kadabra/internal/features/categories/model"
 )
 
 type Service struct {
-	repo CategoryRepository
+	repo     CategoryRepository
+	s3Client *config.S3Client
 }
 
-func NewService(repo CategoryRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo CategoryRepository, s3Client *config.S3Client) *Service {
+	return &Service{repo: repo, s3Client: s3Client}
 }
 
 func (s *Service) Create(ctx context.Context, req *CreateInput) (*categories_model.CategoryWithTranslations, error) {
@@ -51,11 +53,25 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-//func (s *Service) Patch(ctx context.Context, id int, update *PatchInput) (*category_model.Category, error) {
-//	newPatch := category_model.NewCategoryPatch(*update.Name)
-//	out, err := s.repo.Patch(ctx, id, newPatch)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return out, nil
-//}
+func (s *Service) Patch(ctx context.Context, id int, input *PatchInput) (*categories_model.CategoryWithoutTranslations, error) {
+	var imageURL *string
+
+	if input.Image != nil {
+		url, err := s.s3Client.UploadFile(ctx, input.Image)
+		if err != nil {
+			return nil, err
+		}
+		imageURL = &url
+	}
+
+	req := &categories_model.CategoryPatch{
+		Image: imageURL,
+	}
+
+	category, err := s.repo.Patch(ctx, id, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return category, nil
+}

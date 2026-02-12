@@ -1,5 +1,7 @@
 package categories_http
 
+import "mime/multipart"
+
 type TranslationInput struct {
 	LanguageCode string `json:"language_code" binding:"required,len=2,alpha"`
 	Name         string `json:"name" binding:"required,min=1,max=255"`
@@ -10,5 +12,5 @@ type createDTO struct {
 }
 
 type patchDTO struct {
-	Name *string `json:"name,omitempty" validate:"omitempty"`
+	Image *multipart.FileHeader `form:"image" validate:"omitempty"`
 }

@@ -12,5 +12,5 @@ type CategoryService interface {
 	GetById(ctx context.Context, id int, language string) (*categories_model.Category, error)
 	GetBySlug(ctx context.Context, slug, language string) (*categories_model.Category, error)
 	Delete(ctx context.Context, id int) error
-	//Patch(ctx context.Context, id int, update *categories_service.PatchInput) (*categories_model.Category, error)
+	Patch(ctx context.Context, id int, input *categories_service.PatchInput) (*categories_model.CategoryWithoutTranslations, error)
 }

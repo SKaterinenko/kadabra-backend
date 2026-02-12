@@ -14,7 +14,7 @@ func main() {
 	ctx, router, cfg, cleanup := app.App()
 	defer cleanup()
 
-	fmt.Println("Config", cfg)
+	//fmt.Println("Config", cfg)
 	fmt.Println("Server is listening on port", cfg.ServerPort)
 
 	server := &http.Server{

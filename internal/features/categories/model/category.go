@@ -5,14 +5,16 @@ import (
 )
 
 type CategoryWithoutTranslations struct {
-	Id        int       `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id        int       `json:"id" db:"id"`
+	Image     string    `json:"image" db:"image"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type Category struct {
 	Id        int       `json:"id" db:"id"`
 	Name      string    `json:"name" db:"name"`
+	Image     *string   `json:"image" db:"image"`
 	Slug      string    `json:"slug" db:"slug"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
@@ -36,5 +38,5 @@ type CategoryWithTranslations struct {
 }
 
 type CategoryPatch struct {
-	Name *string `json:"name,omitempty" db:"name"`
+	Image *string
 }

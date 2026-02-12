@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"kadabra/internal/core"
 	"kadabra/internal/core/config"
 	categories_model "kadabra/internal/features/categories/model"
 	categories_service "kadabra/internal/features/categories/service"
@@ -90,6 +91,7 @@ func (c *Category) GetAll(ctx context.Context, language string) ([]*categories_m
 	query, args, err := config.Psql.
 		Select(
 			"c.id",
+			"c.image",
 			"ct.name",
 			"ct.slug",
 			"c.created_at",
@@ -123,6 +125,7 @@ func (c *Category) GetById(ctx context.Context, id int, language string) (*categ
 	query, args, err := config.Psql.
 		Select(
 			"c.id",
+			"c.image",
 			"ct.name",
 			"ct.slug",
 			"c.created_at",
@@ -161,6 +164,7 @@ func (c *Category) GetBySlug(ctx context.Context, slug, language string) (*categ
 	query, args, err := config.Psql.
 		Select(
 			"c.id",
+			"c.image",
 			"ct.name",
 			"ct.slug",
 			"c.created_at",
@@ -215,4 +219,44 @@ func (c *Category) Delete(ctx context.Context, id int) error {
 	}
 
 	return nil
+}
+
+func (c *Category) Patch(ctx context.Context, id int, update *categories_model.CategoryPatch) (*categories_model.CategoryWithoutTranslations, error) {
+	q := config.Psql.
+		Update("categories").
+		Where(sq.Eq{"id": id})
+
+	hasUpdates := false
+
+	if update.Image != nil {
+		q = q.Set("image", *update.Image)
+		hasUpdates = true
+	}
+
+	if !hasUpdates {
+		return nil, core.NoUpdate
+	}
+
+	query, args, err := q.
+		Suffix("RETURNING id, image, created_at, updated_at").
+		ToSql()
+	if err != nil {
+		return nil, core.BuildSQLError(err)
+	}
+
+	rows, err := c.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, core.QueryError(err)
+	}
+	defer rows.Close()
+
+	category, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[categories_model.CategoryWithoutTranslations])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, core.NoGetRecord
+		}
+		return nil, core.QueryError(err)
+	}
+
+	return category, nil
 }
