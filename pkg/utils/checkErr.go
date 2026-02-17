@@ -5,9 +5,9 @@ import (
 	"net/http"
 )
 
-func CheckErr(w *http.ResponseWriter, err error) bool {
+func CheckErr(w http.ResponseWriter, err error) bool {
 	if err != nil {
-		res.Json(*w, res.ResDTO{
+		res.Json(w, res.ResDTO{
 			Message: err.Error(),
 			Ok:      false,
 		}, http.StatusBadRequest)

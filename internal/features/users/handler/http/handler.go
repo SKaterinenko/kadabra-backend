@@ -46,7 +46,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authResp, err := h.service.Register(r.Context(), createUser)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 	utils.SetAuthCookies(w, authResp.AccessToken, authResp.RefreshToken, h.cfg)
@@ -60,7 +60,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authResp, err := h.service.Login(r.Context(), body.Email, body.Password)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 	utils.SetAuthCookies(w, authResp.AccessToken, authResp.RefreshToken, h.cfg)
@@ -84,7 +84,7 @@ func (h *Handler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authResp, err := h.service.RefreshTokens(r.Context(), cookie.Value)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		utils.ClearAuthCookies(w) // Очищаем невалидные токены
 		return
 	}
@@ -106,13 +106,13 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 
 	// Валидируем и парсим токен
 	claims, err := utils.ValidateToken(cookie.Value, h.cfg.JWTSecret)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
 	// Получаем пользователя из БД
 	user, err := h.service.GetByID(r.Context(), claims.UserID)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 

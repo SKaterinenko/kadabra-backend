@@ -36,12 +36,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie, err := r.Cookie("access_token")
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
 	claims, err := utils.ValidateToken(cookie.Value, h.cfg.JWTSecret)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
@@ -84,7 +84,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	review, err := h.service.Create(r.Context(), input)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
@@ -94,18 +94,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetAllById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
 	q := r.URL.Query()
 	limit, offset, err := utils.GetLimitOffset(q)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
 	review, err := h.service.GetAllById(r.Context(), id, limit, offset)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
@@ -115,12 +115,12 @@ func (h *Handler) GetAllById(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
 	err = h.service.Delete(r.Context(), id)
-	if utils.CheckErr(&w, err) {
+	if utils.CheckErr(w, err) {
 		return
 	}
 
