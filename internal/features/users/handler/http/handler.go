@@ -36,13 +36,14 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createUser := &users_service.CreateUserRequest{
-		FirstName:   body.FirstName,
-		LastName:    body.LastName,
-		Email:       body.Email,
-		BirthDate:   body.BirthDate,
-		PhoneNumber: body.PhoneNumber,
-		Gender:      body.Gender,
-		Password:    body.Password,
+		FirstName:      body.FirstName,
+		LastName:       body.LastName,
+		Email:          body.Email,
+		BirthDate:      body.BirthDate,
+		PhoneNumber:    body.PhoneNumber,
+		Gender:         body.Gender,
+		Password:       body.Password,
+		RepeatPassword: body.RepeatPassword,
 	}
 
 	authResp, err := h.service.Register(r.Context(), createUser)
