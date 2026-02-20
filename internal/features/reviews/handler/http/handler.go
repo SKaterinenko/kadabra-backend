@@ -65,10 +65,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Получаем массив изображений
 	images, exists := formData.Files["images"]
-	if !exists || len(images) == 0 {
-		res.Json(w, res.ResDTO{Message: "at least one image is required", Ok: false}, http.StatusBadRequest)
-		return
-	}
+	//if !exists || len(images) == 0 {
+	//	res.Json(w, res.ResDTO{Message: "at least one image is required", Ok: false}, http.StatusBadRequest)
+	//	return
+	//}
 
 	if len(images) > 3 {
 		res.Json(w, res.ResDTO{Message: "maximum 3 images allowed", Ok: false}, http.StatusBadRequest)
