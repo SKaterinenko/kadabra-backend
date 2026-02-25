@@ -23,6 +23,7 @@ type Config struct {
 	JWTSecret            string
 	JWTAccessExpiration  time.Duration
 	JWTRefreshExpiration time.Duration
+	RedisUrl             string
 }
 
 func LoadConfig() (*Config, error) {
@@ -50,5 +51,6 @@ func LoadConfig() (*Config, error) {
 		JWTSecret:            os.Getenv("JWT_SECRET"),
 		JWTAccessExpiration:  30 * time.Minute,
 		JWTRefreshExpiration: 10 * time.Hour,
+		RedisUrl:             os.Getenv("REDIS_URL"),
 	}, nil
 }

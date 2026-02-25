@@ -51,6 +51,8 @@ func App() (context.Context, http.Handler, *config.Config, func()) {
 		log.Fatal("db error: ", err)
 	}
 
+	redisClient := config.NewRedis(cfg.RedisUrl)
+
 	// S3
 	s3Client, err := config.NewS3Client(cfg)
 	if err != nil {
@@ -71,7 +73,7 @@ func App() (context.Context, http.Handler, *config.Config, func()) {
 	subCategory := sub_categories_service.NewService(subCategoryRepository)
 	manufacturer := manufacturers_service.NewService(manufacturerRepository)
 	productsType := products_type_service.NewService(productsTypeRepository)
-	products := products_service.NewService(productsRepository, s3Client)
+	products := products_service.NewService(productsRepository, s3Client, redisClient)
 	users := users_service.NewService(usersRepository, s3Client, cfg)
 	reviews := reviews_service.NewService(reviewsRepository, s3Client, cfg)
 

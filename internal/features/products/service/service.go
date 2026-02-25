@@ -2,18 +2,21 @@ package products_service
 
 import (
 	"context"
+	"fmt"
 	"kadabra/internal/core/config"
 	products_model "kadabra/internal/features/products/model"
 	"strings"
+	"time"
 )
 
 type Service struct {
-	repo     ProductRepository
-	s3Client *config.S3Client
+	repo        ProductRepository
+	s3Client    *config.S3Client
+	cacheClient *config.Cache
 }
 
-func NewService(repo ProductRepository, s3Client *config.S3Client) *Service {
-	return &Service{repo: repo, s3Client: s3Client}
+func NewService(repo ProductRepository, s3Client *config.S3Client, cacheClient *config.Cache) *Service {
+	return &Service{repo: repo, s3Client: s3Client, cacheClient: cacheClient}
 }
 
 func (s *Service) Create(ctx context.Context, product *CreateInput) (*products_model.ProductWithTranslations, error) {
@@ -29,10 +32,29 @@ func (s *Service) GetAll(ctx context.Context, lang string, categories, types, ma
 	if limit == 0 {
 		limit = 20
 	}
+
+	cacheKey := fmt.Sprintf("products:all:%s:%v:%v:%v:%d:%d",
+		lang, categories, types, manufacturers, limit, offset)
+
+	// Пробуем кеш
+	var cached products_model.Products
+	err := s.cacheClient.Get(ctx, cacheKey, &cached)
+	if err == nil {
+		return &cached, nil
+	}
+
+	// Идём в БД
 	out, err := s.repo.GetAll(ctx, lang, categories, types, manufacturers, limit, offset)
 	if err != nil {
 		return nil, err
 	}
+
+	// Сохраняем в кеш на 5 минут
+	err = s.cacheClient.Set(ctx, cacheKey, out, 5*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+
 	return out, nil
 }
 
