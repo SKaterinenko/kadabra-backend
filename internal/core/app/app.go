@@ -51,7 +51,12 @@ func App() (context.Context, http.Handler, *config.Config, func()) {
 		log.Fatal("db error: ", err)
 	}
 
-	redisClient := config.NewRedis(cfg.RedisUrl)
+	// Cache
+	redisClient, err := config.NewRedis(cfg.RedisUrl)
+	if err != nil {
+		stop()
+		log.Fatal("redis error: ", err)
+	}
 
 	// S3
 	s3Client, err := config.NewS3Client(cfg)

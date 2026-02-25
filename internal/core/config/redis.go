@@ -11,9 +11,12 @@ type Cache struct {
 	client *redis.Client
 }
 
-func NewRedis(url string) *Cache {
-	opts, _ := redis.ParseURL(url)
-	return &Cache{client: redis.NewClient(opts)}
+func NewRedis(url string) (*Cache, error) {
+	opts, err := redis.ParseURL(url)
+	if err != nil {
+		return nil, err
+	}
+	return &Cache{client: redis.NewClient(opts)}, nil
 }
 
 func (c *Cache) Get(ctx context.Context, key string, dest any) error {
