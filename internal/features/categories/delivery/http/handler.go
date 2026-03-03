@@ -97,7 +97,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if utils.CheckErr(w, err) {
 		return
 	}
-	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful"}, http.StatusOK)
+	res.Json(w, res.ResDTO{Ok: true, Message: "Delete successful!"}, http.StatusOK)
 }
 
 func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
